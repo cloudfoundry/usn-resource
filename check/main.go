@@ -51,6 +51,9 @@ func main() {
 		}
 		response = append(response, Version{GUID: item.GUID})
 	}
+	if len(response) == 0 && request.Version.GUID == "" {
+		response = append(response, Version{GUID: "bootstrap"})
+	}
 
 	err = json.NewEncoder(os.Stdout).Encode(&response)
 	if err != nil {

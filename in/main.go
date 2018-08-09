@@ -57,6 +57,17 @@ func main() {
 	}
 
 	response := Response{Version: request.Version}
+
+	if request.Version.GUID == "bootstrap" {
+		ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(""), 0644)
+		ioutil.WriteFile(filepath.Join(path, "usn.json"), []byte("{}"), 0644)
+		err = json.NewEncoder(os.Stdout).Encode(&response)
+		if err != nil {
+			log.Fatal("in: bad stdout: encode error", err)
+		}
+		return
+	}
+
 	usn := api.USNFromURL(request.Version.GUID)
 	cveURLs := []string{}
 	for _, cve := range usn.CVEs() {
