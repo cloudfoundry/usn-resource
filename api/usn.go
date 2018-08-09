@@ -16,6 +16,14 @@ type USN struct {
 	ID string
 
 	markdownCache string
+	metadataCache *metadata
+}
+
+type metadata struct {
+	Title       string   `yaml:"title"`
+	Description string   `yaml:"description"`
+	Date        string   `yaml:"date"`
+	Releases    []string `yaml:"releases"`
 }
 
 func USNFromURL(address string) *USN {
@@ -26,7 +34,7 @@ func USNFromURL(address string) *USN {
 	return &USN{ID: strings.Trim(u.Path, "/")}
 }
 
-func (u *USN) markdown() string {
+func (u *USN) Markdown() string {
 	if u.markdownCache != "" {
 		return u.markdownCache
 	}
@@ -47,22 +55,40 @@ func (u *USN) markdown() string {
 	return u.markdownCache
 }
 
-func (u *USN) Releases() []string {
-	metadataBytes := []byte(strings.Split(u.markdown(), "---")[1])
-	metadata := struct {
-		Releases []string `yaml:"releases"`
-	}{}
-	err := yaml.Unmarshal(metadataBytes, &metadata)
-	if err != nil {
-		log.Fatal("check: failed to get metadata: parse error", err)
+func (u *USN) metadata() metadata {
+	if u.metadataCache != nil {
+		return *u.metadataCache
 	}
-	return metadata.Releases
+	metadataBytes := []byte(strings.Split(u.Markdown(), "---")[1])
+	metadata := &metadata{}
+	err := yaml.Unmarshal(metadataBytes, metadata)
+	if err != nil {
+		log.Fatal("usn: failed to get metadata: parse error", err)
+	}
+	u.metadataCache = metadata
+	return *metadata
+}
+
+func (u *USN) Title() string {
+	return u.metadata().Title
+}
+
+func (u *USN) Description() string {
+	return u.metadata().Description
+}
+
+func (u *USN) Date() string {
+	return u.metadata().Date
+}
+
+func (u *USN) Releases() []string {
+	return u.metadata().Releases
 }
 
 func (u *USN) CVEs() CVEList {
 	re := regexp.MustCompile(`\[CVE-.*\]\((.*)\)`)
 	links := []string{}
-	for _, match := range re.FindAllStringSubmatch(u.markdown(), -1) {
+	for _, match := range re.FindAllStringSubmatch(u.Markdown(), -1) {
 		if match == nil {
 			continue
 		}
