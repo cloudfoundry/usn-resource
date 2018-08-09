@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"log"
 
@@ -25,9 +26,14 @@ type InRequest struct {
 	Version Version `json:"version"`
 }
 
+type MetadataField struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 type Response struct {
-	Version  Version                `json:"version"`
-	Metadata map[string]interface{} `json:"metadata"`
+	Version  Version         `json:"version"`
+	Metadata []MetadataField `json:"metadata"`
 }
 
 func main() {
@@ -43,12 +49,13 @@ func main() {
 
 	response := Response{Version: request.Version}
 	usn := api.USNFromURL(request.Version.GUID)
-	response.Metadata = map[string]interface{}{}
-	response.Metadata["title"] = usn.Title()
-	response.Metadata["description"] = usn.Description()
-	response.Metadata["date"] = usn.Date()
-	response.Metadata["releases"] = uniq(usn.Releases())
-	response.Metadata["priorities"] = uniq(usn.CVEs().Priorities())
+	response.Metadata = []MetadataField{
+		{"title", usn.Title()},
+		{"description", usn.Description()},
+		{"date", usn.Date()},
+		{"releases", strings.Join(uniq(usn.Releases()), ", ")},
+		{"priorities", strings.Join(uniq(usn.CVEs().Priorities()), ", ")},
+	}
 	ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(usn.Markdown()), 0644)
 
 	err = json.NewEncoder(os.Stdout).Encode(&response)
