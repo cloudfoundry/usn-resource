@@ -31,6 +31,15 @@ type MetadataField struct {
 	Value string `json:"value"`
 }
 
+type USNMetadata struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Date        string   `json:"date"`
+	Releases    []string `json:"releases"`
+	Priorities  []string `json:"priorities"`
+	CVEs        []string `json:"cves"`
+}
+
 type Response struct {
 	Version  Version         `json:"version"`
 	Metadata []MetadataField `json:"metadata"`
@@ -63,6 +72,22 @@ func main() {
 		{"cves", strings.Join(cveURLs, ", ")},
 	}
 	ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(usn.Markdown()), 0644)
+	usnMetadata := USNMetadata{
+		Title:       usn.Title(),
+		Description: usn.Description(),
+		Date:        usn.Date(),
+		Releases:    uniq(usn.Releases()),
+		Priorities:  uniq(usn.CVEs().Priorities()),
+		CVEs:        cveURLs,
+	}
+	f, err := os.Create(filepath.Join(path, "usn.json"))
+	if err != nil {
+		log.Fatal("in: opening usn.json", err)
+	}
+	err = json.NewEncoder(f).Encode(&usnMetadata)
+	if err != nil {
+		log.Fatal("in: encoding usn.json", err)
+	}
 
 	err = json.NewEncoder(os.Stdout).Encode(&response)
 	if err != nil {
