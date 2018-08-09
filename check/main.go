@@ -46,7 +46,7 @@ func main() {
 			continue
 		}
 		priorities := usn.CVEs().Priorities()
-		if !any(priorities, request.Source.Priorities) {
+		if !anyEqual(priorities, request.Source.Priorities) {
 			continue
 		}
 		response = append(response, Version{GUID: item.GUID})
@@ -58,7 +58,7 @@ func main() {
 	}
 }
 
-func any(a []string, s []string) bool {
+func anyEqual(a []string, s []string) bool {
 	m := map[string]struct{}{}
 	for _, v := range s {
 		m[v] = struct{}{}

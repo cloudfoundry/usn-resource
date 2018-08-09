@@ -49,12 +49,18 @@ func main() {
 
 	response := Response{Version: request.Version}
 	usn := api.USNFromURL(request.Version.GUID)
+	cveURLs := []string{}
+	for _, cve := range usn.CVEs() {
+		cveURLs = append(cveURLs, cve.URL)
+	}
+
 	response.Metadata = []MetadataField{
 		{"title", usn.Title()},
 		{"description", usn.Description()},
 		{"date", usn.Date()},
 		{"releases", strings.Join(uniq(usn.Releases()), ", ")},
 		{"priorities", strings.Join(uniq(usn.CVEs().Priorities()), ", ")},
+		{"cves", strings.Join(cveURLs, ", ")},
 	}
 	ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(usn.Markdown()), 0644)
 

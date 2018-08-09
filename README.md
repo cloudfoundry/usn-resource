@@ -7,13 +7,13 @@ A read-only (no `put`) [Concourse](https://concourse.ci) resource for tracking
 ## Source Configuration
 
  * `os` - os distro to track
-  * `ubuntu-14.04-lts` for Ubuntu Trusty
-  * `ubuntu-16.04-lts` for Ubuntu Xenial
-  * ... (see filters on the USN website for more)
+   * `ubuntu-14.04-lts` for Ubuntu Trusty
+   * `ubuntu-16.04-lts` for Ubuntu Xenial
+   * ... (see filters on the USN website for more)
  * `priorities` - list of CVE priorities to trigger on
-  * `medium`
-  * `high`
-  * `critical`
+   * `medium`
+   * `high`
+   * `critical`
 
 
 ## `check`
