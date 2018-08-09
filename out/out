@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "This resource cannot be used as an output"
-exit 1
