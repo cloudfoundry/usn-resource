@@ -32,6 +32,7 @@ type MetadataField struct {
 }
 
 type USNMetadata struct {
+	URL         string   `json:"url"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Date        string   `json:"date"`
@@ -76,6 +77,7 @@ func main() {
 
 	response.Metadata = []MetadataField{
 		{"title", usn.Title()},
+		{"url", request.Version.GUID},
 		{"description", usn.Description()},
 		{"date", usn.Date()},
 		{"releases", strings.Join(uniq(usn.Releases()), ", ")},
@@ -85,6 +87,7 @@ func main() {
 	ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(usn.Markdown()), 0644)
 	usnMetadata := USNMetadata{
 		Title:       usn.Title(),
+		URL:         request.Version.GUID,
 		Description: usn.Description(),
 		Date:        usn.Date(),
 		Releases:    uniq(usn.Releases()),
