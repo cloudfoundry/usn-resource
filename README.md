@@ -14,6 +14,7 @@ A read-only (no `put`) [Concourse](https://concourse.ci) resource for tracking
    * `medium`
    * `high`
    * `critical`
+   * `unknown` when CVE reference gives http error
 
 
 ## `check`

@@ -29,8 +29,9 @@ func (c CVE) Priority() string {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Printf("cve: status code error: %d %s from %s -- defaulting to high\n", resp.StatusCode, resp.Status, c.URL)
-		return "high"
+		priority := "unknown"
+		log.Printf("cve: status code error: %d %s from %s -- defaulting to %s\n", resp.StatusCode, resp.Status, c.URL, priority)
+		return priority
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
