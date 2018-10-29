@@ -1,0 +1,17 @@
+name: usn-resource
+
+resources:
+  - name: usn-src
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/usn-resource
+      branch: master
+
+jobs:
+  - name: test-integration
+    public: true
+    plan:
+      - get: usn-src
+        trigger: true
+      - task: test-integration
+        file: usn-src/ci/tasks/test-integration.yml

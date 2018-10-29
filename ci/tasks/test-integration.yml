@@ -1,0 +1,15 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 'latest'
+
+inputs:
+- name: usn-src
+  path: gopath/src/github.com/cloudfoundry/usn-resource
+
+run:
+  path: gopath/src/github.com/cloudfoundry/usn-resource/ci/tasks/test-integration.sh
