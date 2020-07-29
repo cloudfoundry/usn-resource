@@ -31,7 +31,7 @@ func USNFromURL(address string) *USN {
 	if err != nil {
 		log.Fatal("usn: failed to USN ID: url parse error", err)
 	}
-	return &USN{ID: strings.Trim(u.Path, "/")}
+	return &USN{ID: strings.Trim(strings.Replace(u.Path, "/security/notices/USN-", "", 1), "/")}
 }
 
 func (u *USN) Markdown() string {
