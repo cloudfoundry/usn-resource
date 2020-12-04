@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/mmcdole/gofeed"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -60,7 +61,6 @@ func main() {
 	response := Response{Version: request.Version}
 
 	if request.Version.GUID == "bootstrap" {
-		ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(""), 0644)
 		ioutil.WriteFile(filepath.Join(path, "usn.json"), []byte("{}"), 0644)
 		err = json.NewEncoder(os.Stdout).Encode(&response)
 		if err != nil {
@@ -69,7 +69,7 @@ func main() {
 		return
 	}
 
-	usn := api.USNFromURL(request.Version.GUID)
+	usn := getUSN(request.Version.GUID)
 	cveURLs := []string{}
 	for _, cve := range usn.CVEs() {
 		cveURLs = append(cveURLs, cve.URL)
@@ -84,7 +84,6 @@ func main() {
 		{"priorities", strings.Join(uniq(usn.CVEs().Priorities()), ", ")},
 		{"cves", strings.Join(cveURLs, ", ")},
 	}
-	ioutil.WriteFile(filepath.Join(path, "usn.md"), []byte(usn.Markdown()), 0644)
 	usnMetadata := USNMetadata{
 		Title:       usn.Title(),
 		URL:         request.Version.GUID,
@@ -107,6 +106,21 @@ func main() {
 	if err != nil {
 		log.Fatal("in: bad stdout: encode error", err)
 	}
+}
+
+func getUSN(guid string) (*api.USN) {
+	fp := gofeed.NewParser()
+	feed, _ := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
+
+	for _, item := range feed.Items {
+		if guid == item.GUID {
+			return api.USNFromFeed(item)
+
+		}
+	}
+
+	log.Fatal("in: USN not found on rss feed, usn guid: ", guid)
+	return &api.USN{}
 }
 
 func uniq(a []string) []string {

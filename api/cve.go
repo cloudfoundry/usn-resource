@@ -39,7 +39,8 @@ func (c CVE) Priority() string {
 		log.Fatal("cve: failed to parse html: parse error", err)
 	}
 
-	return strings.ToLower(doc.Find("#body-card > div > div:nth-child(1) > div:nth-child(2) > a").Text())
+	priority := strings.ToLower(doc.Find(".cve-status-box > div:nth-child(2)> div > h4").Text())
+	return strings.TrimSpace(priority)
 }
 
 func (l CVEList) Priorities() []string {

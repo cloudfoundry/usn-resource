@@ -41,7 +41,7 @@ func main() {
 			break
 		}
 
-		usn := api.USNFromURL(item.GUID)
+		usn := api.USNFromFeed(item)
 		if !usn.IsForRelease(request.Source.OS) {
 			continue
 		}

@@ -1,46 +1,60 @@
 package api
 
 import (
-	"fmt"
+	rss "github.com/mmcdole/gofeed"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 type USN struct {
-	ID string
+	URL string
 
 	markdownCache string
 	metadataCache *metadata
+	rssMetadata rssMetadata
 }
-
-type metadata struct {
+type rssMetadata struct {
 	Title       string   `yaml:"title"`
 	Description string   `yaml:"description"`
 	Date        string   `yaml:"date"`
-	Releases    []string `yaml:"releases"`
 }
 
-func USNFromURL(address string) *USN {
-	u, err := url.Parse(address)
+type usnMetadata struct {
+	Releases    []string
+}
+
+type metadata struct {
+	rssMetadata
+	usnMetadata
+}
+
+var lineToName = map[string]string{
+	"ubuntu-14.04-lts": "trusty",
+	"ubuntu-16.04-lts": "xenial",
+	"ubuntu-18.04-lts": "bionic",
+}
+
+func USNFromFeed(item *rss.Item) *USN{
+	_, err := url.Parse(item.GUID)
 	if err != nil {
 		log.Fatal("usn: failed to USN ID: url parse error", err)
 	}
-	return &USN{ID: strings.Trim(strings.Replace(u.Path, "/security/notices/USN-", "", 1), "/")}
+	rssMetadata := rssMetadata{
+		Title: item.Title,
+		Description: item.Description,
+	}
+	return &USN{URL: item.GUID, rssMetadata: rssMetadata}
 }
 
-func (u *USN) Markdown() string {
+func (u *USN) USNPage() string {
 	if u.markdownCache != "" {
 		return u.markdownCache
 	}
 
-	url := fmt.Sprintf("https://git.launchpad.net/usn.ubuntu.com/plain/content/%s.md", u.ID)
-	resp, err := http.Get(url)
+	resp, err := http.Get(u.URL)
 	if err != nil {
 		log.Fatal("usn: failed to get markdown: http get error", err)
 	}
@@ -48,7 +62,7 @@ func (u *USN) Markdown() string {
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal("usn: failed to get markdown: read error", err)
+		log.Fatal("cve: failed to parse html: parse error", err)
 	}
 
 	u.markdownCache = string(bodyBytes)
@@ -59,12 +73,21 @@ func (u *USN) metadata() metadata {
 	if u.metadataCache != nil {
 		return *u.metadataCache
 	}
-	metadataBytes := []byte(strings.Split(u.Markdown(), "---")[1])
-	metadata := &metadata{}
-	err := yaml.Unmarshal(metadataBytes, metadata)
-	if err != nil {
-		log.Fatal("usn: failed to get metadata: parse error", err)
+	metadataSection := u.USNPage()
+	re := regexp.MustCompile(`/security/notices\?release=([^"]*)`)
+	releaseMatches := re.FindAllStringSubmatch(metadataSection, -1)
+
+	releases := []string{}
+	for _, match := range releaseMatches {
+		if match == nil {
+			continue
+		}
+		if len(match) > 1 && len(match[1]) > 0 {
+			releases = append(releases, match[1])
+		}
 	}
+
+	metadata := &metadata{u.rssMetadata,usnMetadata{Releases: releases} }
 	u.metadataCache = metadata
 	return *metadata
 }
@@ -86,9 +109,9 @@ func (u *USN) Releases() []string {
 }
 
 func (u *USN) CVEs() CVEList {
-	re := regexp.MustCompile(`\[CVE-.*\]\((.*)\)`)
+	re := regexp.MustCompile(`href=\"(.*CVE-.*)\">CVE-`)
 	links := []string{}
-	for _, match := range re.FindAllStringSubmatch(u.Markdown(), -1) {
+	for _, match := range re.FindAllStringSubmatch(u.USNPage(), -1) {
 		if match == nil {
 			continue
 		}
@@ -100,6 +123,10 @@ func (u *USN) CVEs() CVEList {
 }
 
 func (u *USN) IsForRelease(release string) bool {
+	if releaseKey, ok := lineToName[release]; ok {
+		release = releaseKey
+	}
+
 	if contains(u.Releases(), release) {
 		return true
 	}
