@@ -43,4 +43,5 @@ Not a thing for this read-only resource.
 
 
 ## Development
-A simple set of tests live in `api/integration_test.go`
+- A simple set of tests live in `api/integration_test.go`
+- After a change, building and pushing the docker image manually (it's not pipelined) is needed for most people to consume this
