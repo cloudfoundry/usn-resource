@@ -109,7 +109,7 @@ func (u *USN) Releases() []string {
 }
 
 func (u *USN) CVEs() CVEList {
-	re := regexp.MustCompile(`href=\"(.*CVE-.*)\">CVE-`)
+	re := regexp.MustCompile(`href=\"(http.*CVE-.*)\">CVE-`)
 	links := []string{}
 	for _, match := range re.FindAllStringSubmatch(u.USNPage(), -1) {
 		if match == nil {

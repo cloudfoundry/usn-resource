@@ -25,7 +25,7 @@ func cvesFromURLs(urls []string) CVEList {
 func (c CVE) Priority() string {
 	resp, err := http.Get(c.URL)
 	if err != nil {
-		log.Fatal("cve: failed to get: http get error", err)
+		log.Fatalf("cve: failed to get %s http get error - %s", c.URL, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
