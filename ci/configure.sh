@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
-fly -t production set-pipeline \
+script_dir="$( cd "$( dirname "$0" )" && pwd )"
+
+fly -t bosh-ecosystem set-pipeline \
     -p usn-resource \
-    -c pipeline.yml
+    -c ${script_dir}/pipeline.yml
