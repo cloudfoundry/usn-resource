@@ -8,8 +8,7 @@ image_resource:
     tag: 'latest'
 
 inputs:
-- name: usn-src
-  path: gopath/src/github.com/cloudfoundry/usn-resource
+- name: usn-resource
 
 run:
-  path: gopath/src/github.com/cloudfoundry/usn-resource/ci/tasks/test-integration.sh
+  path: usn-resource/ci/tasks/test-integration.sh
