@@ -29,5 +29,5 @@ jobs:
         file: usn-resource/ci/tasks/build.yml
       - put: usn-image
         params:
-          build: .
+          build: usn-resource/docker
           dockerfile: usn-resource/docker/Dockerfile
