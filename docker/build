@@ -18,6 +18,3 @@ docker_dir=$PWD
 
   git rev-parse HEAD > $docker_dir/assets/version
 )
-
-docker build -t bosh/usn-resource .
-

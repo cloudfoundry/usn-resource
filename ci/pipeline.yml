@@ -6,6 +6,12 @@ resources:
     source:
       uri: https://github.com/cloudfoundry/usn-resource
       branch: master
+  - name: usn-image
+    type: docker-image
+    source:
+      repository: bosh/usn-resource
+      username: ((docker.username))
+      password: ((docker.password))
 
 jobs:
   - name: test-integration
@@ -15,3 +21,13 @@ jobs:
         trigger: true
       - task: test-integration
         file: usn-resource/ci/tasks/test-integration.yml
+  - name: publish
+    plan:
+      - get: usn-resource
+        passed: [test-integration]
+      - task: build
+        file: usn-resource/ci/tasks/build.yml
+      - put: usn-image
+        params:
+          build: .
+          dockerfile: usn-resource/docker/Dockerfile
