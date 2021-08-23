@@ -22,7 +22,7 @@ var _ = Describe("CVE", func() {
 				if priority != "unknown" {
 					foundRealPriority = true
 				}
-				Expect(priority).To(MatchRegexp(`^(?i)(critical|high|medium|low|negligible|untriaged|unknown)$`))
+				Expect(priority).To(MatchRegexp(`^(?i)(critical|high|medium|low|negligible|untriaged|unknown|rejected)$`))
 			}
 		}
 		Expect(foundRealPriority).To(BeTrue(), "Priority parsing seems to be broken, expected to find at least one real cve priority in 10 rss feed usns")

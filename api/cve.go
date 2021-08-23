@@ -40,7 +40,23 @@ func (c CVE) Priority() string {
 	}
 
 	priority := strings.ToLower(doc.Find(".cve-status-box > div:nth-child(2)> div > h4").Text())
-	return strings.TrimSpace(priority)
+	result := strings.TrimSpace(priority)
+
+	if result != "" {
+		return result
+	}
+
+	// If a CVE has been marked as "Rejected" on the CVE page, the element where priority is displayed
+	// comes under a different CSS path.
+	priority = strings.ToLower(doc.Find(".cve-status-box--highlight > .p-heading--four").Text())
+	result = strings.TrimSpace(priority)
+
+	if result != "" {
+		return result
+	}
+
+	log.Fatalf("cve: unable to find a priority for CVE at '%s'. it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
+	panic("Unable to parse priority for CVE")
 }
 
 func (l CVEList) Priorities() []string {
