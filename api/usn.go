@@ -1,12 +1,15 @@
 package api
 
 import (
-	rss "github.com/mmcdole/gofeed"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
+
+	rss "github.com/mmcdole/gofeed"
 )
 
 type USN struct {
@@ -109,14 +112,24 @@ func (u *USN) Releases() []string {
 }
 
 func (u *USN) CVEs() CVEList {
-	re := regexp.MustCompile(`href=\"(http.*CVE-.*)\">CVE-`)
+	parsedUrl, err := url.Parse(u.URL)
+
+	if err != nil {
+		return CVEList{}
+	}
+
+	re := regexp.MustCompile(`href=\"((/|http).*CVE-.*)\">CVE-`)
 	links := []string{}
 	for _, match := range re.FindAllStringSubmatch(u.USNPage(), -1) {
 		if match == nil {
 			continue
 		}
 		if len(match) > 1 && len(match[1]) > 0 {
-			links = append(links, match[1])
+			if strings.HasPrefix(match[1], "/") {
+				links = append(links, fmt.Sprintf("%v://%v%v", parsedUrl.Scheme, parsedUrl.Hostname(), match[1]))
+			} else {
+				links = append(links, match[1])
+			}
 		}
 	}
 	return cvesFromURLs(links)
