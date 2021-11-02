@@ -55,6 +55,16 @@ func (c CVE) Priority() string {
 		return result
 	}
 
+	// A CVE page can be missing a priority box. See: https://ubuntu.com/security/CVE-2021-25219
+	// To ensure our parsing is not broken while allowing this case, look for a very specific
+	// column entry where the priority would normally go, ensure it exists, and is blank
+	priorityNode := doc.Find("#main-content > .p-strip > .row:first-child > .col-3")
+	result = strings.TrimSpace(priorityNode.Text())
+	if priorityNode.Length() != 0 && result == "" {
+		log.Printf("cve: unable to find a priority for CVE at '%s'. It matches known page structure, so parsing may still be valid. Returning a status of 'unknown'", c.URL)
+		return "unknown"
+	}
+
 	log.Fatalf("cve: unable to find a priority for CVE at '%s'. it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
 	panic("Unable to parse priority for CVE")
 }
