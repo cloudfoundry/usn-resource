@@ -80,7 +80,7 @@ github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
 # github.com/stretchr/testify v1.7.0
 ## explicit; go 1.13
-# golang.org/x/net v0.0.0-20220421235706-1d1ef9303861
+# golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 ## explicit; go 1.17
 golang.org/x/net/html
 golang.org/x/net/html/atom
