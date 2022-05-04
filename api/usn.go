@@ -17,16 +17,16 @@ type USN struct {
 
 	markdownCache string
 	metadataCache *metadata
-	rssMetadata rssMetadata
+	rssMetadata   rssMetadata
 }
 type rssMetadata struct {
-	Title       string   `yaml:"title"`
-	Description string   `yaml:"description"`
-	Date        string   `yaml:"date"`
+	Title       string `yaml:"title"`
+	Description string `yaml:"description"`
+	Date        string `yaml:"date"`
 }
 
 type usnMetadata struct {
-	Releases    []string
+	Releases []string
 }
 
 type metadata struct {
@@ -38,15 +38,16 @@ var lineToName = map[string]string{
 	"ubuntu-14.04-lts": "trusty",
 	"ubuntu-16.04-lts": "xenial",
 	"ubuntu-18.04-lts": "bionic",
+	"ubuntu-22.04-lts": "jammy",
 }
 
-func USNFromFeed(item *rss.Item) *USN{
+func USNFromFeed(item *rss.Item) *USN {
 	_, err := url.Parse(item.GUID)
 	if err != nil {
 		log.Fatal("usn: failed to USN ID: url parse error", err)
 	}
 	rssMetadata := rssMetadata{
-		Title: item.Title,
+		Title:       item.Title,
 		Description: item.Description,
 	}
 	return &USN{URL: item.GUID, rssMetadata: rssMetadata}
@@ -90,7 +91,7 @@ func (u *USN) metadata() metadata {
 		}
 	}
 
-	metadata := &metadata{u.rssMetadata,usnMetadata{Releases: releases} }
+	metadata := &metadata{u.rssMetadata, usnMetadata{Releases: releases}}
 	u.metadataCache = metadata
 	return *metadata
 }
