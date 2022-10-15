@@ -80,7 +80,7 @@ github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
 # github.com/stretchr/testify v1.7.0
 ## explicit; go 1.13
-# golang.org/x/net v0.0.0-20221004154528-8021a29435af
+# golang.org/x/net v0.0.0-20221014081412-f15817d10f9b
 ## explicit; go 1.17
 golang.org/x/net/html
 golang.org/x/net/html/atom
@@ -89,7 +89,7 @@ golang.org/x/net/html/charset
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-# golang.org/x/text v0.3.7
+# golang.org/x/text v0.3.8
 ## explicit; go 1.17
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -108,9 +108,10 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
-# golang.org/x/tools v0.0.0-20201224043029-2b0845dc783e
-## explicit; go 1.12
+# golang.org/x/tools v0.1.12
+## explicit; go 1.18
 golang.org/x/tools/go/ast/inspector
+golang.org/x/tools/internal/typeparams
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 ## explicit
 gopkg.in/tomb.v1
