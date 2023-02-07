@@ -39,7 +39,7 @@ func (c CVE) Priority() string {
 		log.Fatal("cve: failed to parse html: parse error", err)
 	}
 
-	priority := strings.ToLower(doc.Find(".cve-status-box > div:nth-child(2)> div > h4").Text())
+	priority := strings.ToLower(doc.Find(".cve-status-box:first-of-type .p-heading--4").Text())
 	result := strings.TrimSpace(priority)
 
 	if result != "" {
