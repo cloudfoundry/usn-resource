@@ -3,7 +3,7 @@ module github.com/cloudfoundry/usn-resource
 go 1.20
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/mmcdole/gofeed v1.2.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.15.0
