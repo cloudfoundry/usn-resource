@@ -10,7 +10,7 @@ require (
 )
 
 require (
-	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
