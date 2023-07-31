@@ -21,7 +21,7 @@ resources:
       password: ((docker.password))
 
   - name: golang-release-image
-    type: docker-image
+    type: registry-image
     source:
       repository: bosh/golang-release
       username: ((docker.username))
@@ -69,11 +69,16 @@ jobs:
 
   - name: publish
     plan:
-      - get: usn-resource
-        passed: [test-integration]
-        trigger: true
+      - in_parallel:
+        - get: usn-resource
+          trigger: true
+          passed: [test-integration]
+        - get: golang-release-image
+          trigger: true
+          passed: [test-integration]
       - task: build
         file: usn-resource/ci/tasks/build.yml
+        image: golang-release-image
       - put: usn-image
         params:
           build: usn-resource/docker
