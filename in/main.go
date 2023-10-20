@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/mmcdole/gofeed"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,11 +48,14 @@ type Response struct {
 
 func main() {
 	path := os.Args[1]
-	os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		log.Fatal("in: making directory", err)
+	}
 
 	var request InRequest
 
-	err := json.NewDecoder(os.Stdin).Decode(&request)
+	err = json.NewDecoder(os.Stdin).Decode(&request)
 	if err != nil {
 		log.Fatal("in: bad stdin: parse error", err)
 	}
@@ -61,7 +63,11 @@ func main() {
 	response := Response{Version: request.Version}
 
 	if request.Version.GUID == "bootstrap" {
-		ioutil.WriteFile(filepath.Join(path, "usn.json"), []byte("{}"), 0644)
+		err = os.WriteFile(filepath.Join(path, "usn.json"), []byte("{}"), 0644)
+		if err != nil {
+			log.Fatal("in: writing to usn.json bootstrap", err)
+		}
+
 		err = json.NewEncoder(os.Stdout).Encode(&response)
 		if err != nil {
 			log.Fatal("in: bad stdout: encode error", err)
@@ -108,7 +114,7 @@ func main() {
 	}
 }
 
-func getUSN(guid string) (*api.USN) {
+func getUSN(guid string) *api.USN {
 	fp := gofeed.NewParser()
 	feed, _ := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
 
