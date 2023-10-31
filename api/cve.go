@@ -23,6 +23,7 @@ func cvesFromURLs(urls []string) CVEList {
 }
 
 func (c CVE) Priority() string {
+	log.Printf("cve: fetching '%s'", c.URL)
 	resp, err := http.Get(c.URL)
 	if err != nil {
 		log.Fatalf("cve: failed to get %s http get error - %s", c.URL, err)
