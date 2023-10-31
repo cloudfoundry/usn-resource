@@ -9,6 +9,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+const unknownPriority = "unknown"
+
 type CVE struct {
 	URL string
 }
@@ -24,16 +26,20 @@ func cvesFromURLs(urls []string) CVEList {
 }
 
 func (c CVE) Priority() string {
-	log.Printf("cve: fetching '%s'", c.URL)
-	resp, err := http.Get(c.URL)
+	resp, err := getNonBrotliResponse(c.URL)
 	if err != nil {
-		log.Fatalf("cve: failed to get %s http get error - %s", c.URL, err)
+		log.Fatalf("cve: http.Get failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func(resp *http.Response) {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Printf("cve: error closing resp.Body: %v", err)
+		}
+	}(resp)
+
 	if resp.StatusCode != 200 {
-		priority := "unknown"
-		log.Printf("cve: status code error: %d %s from %s -- defaulting to %s\n", resp.StatusCode, resp.Status, c.URL, priority)
-		return priority
+		log.Printf("cve: non-success HTTP Status: '%+v' -- defaulting priority to '%s'", resp.Status, unknownPriority)
+		return unknownPriority
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
@@ -63,11 +69,12 @@ func (c CVE) Priority() string {
 	priorityNode := doc.Find("#main-content > .p-strip > .row:first-child > .col-3")
 	result = strings.TrimSpace(priorityNode.Text())
 	if priorityNode.Length() != 0 && result == "" {
-		log.Printf("cve: unable to find a priority for CVE at '%s'. It matches known page structure, so parsing may still be valid. Returning a status of 'unknown'", c.URL)
-		return "unknown"
+		log.Printf("cve: unable to find a priority for CVE at '%s'. It matches known page structure, so parsing may still be valid. Returning a status of '%s'", c.URL, unknownPriority)
+		return unknownPriority
 	}
 
-	log.Printf("cve: unable to find a priority for CVE at '%s'. it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
+	log.Printf("cve: unable to find a priority for CVE at '%s' - it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
+	log.Printf("cve: response.Header 'Content-Encoding': '%s'", resp.Header.Get("Content-Encoding"))
 	panic(fmt.Sprintf("Unable to parse priority for CVE: '%s'", c.URL))
 }
 

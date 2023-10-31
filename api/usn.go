@@ -42,6 +42,7 @@ var lineToName = map[string]string{
 }
 
 func USNFromFeed(item *rss.Item) *USN {
+	log.Printf("usn: rss.Item '%s'", item.GUID)
 	_, err := url.Parse(item.GUID)
 	if err != nil {
 		log.Fatal("usn: failed to USN ID: url parse error", err)
@@ -55,18 +56,28 @@ func USNFromFeed(item *rss.Item) *USN {
 
 func (u *USN) USNPage() string {
 	if u.markdownCache != "" {
+		log.Printf("usn: markdownCache hit '%s'", u.URL)
 		return u.markdownCache
 	}
 
-	resp, err := http.Get(u.URL)
+	resp, err := getNonBrotliResponse(u.URL)
 	if err != nil {
-		log.Fatal("usn: failed to get markdown: http get error", err)
+		log.Fatalf("cve: failed to get '%s': %s", u.URL, err)
 	}
-	defer resp.Body.Close()
+	defer func(resp *http.Response) {
+		err := resp.Body.Close()
+		if err != nil {
+			log.Printf("usn: error closing resp.Body: %v", err)
+		}
+	}(resp)
+
+	if resp.StatusCode != 200 {
+		log.Fatalf("cve: non-success HTTP Status: '%+v'", resp.Status)
+	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal("cve: failed to parse html: parse error", err)
+		log.Fatalf("usn: failed to read HTTP response body: %v", err)
 	}
 
 	u.markdownCache = string(bodyBytes)
@@ -75,14 +86,19 @@ func (u *USN) USNPage() string {
 
 func (u *USN) metadata() metadata {
 	if u.metadataCache != nil {
+		log.Print("usn: metadataCache hit")
 		return *u.metadataCache
 	}
 	metadataSection := u.USNPage()
 	re := regexp.MustCompile(`/security/notices\?release=([^"]*)`)
 	releaseMatches := re.FindAllStringSubmatch(metadataSection, -1)
+	if len(releaseMatches) == 0 {
+		log.Printf("usn: no matches found")
+	}
 
 	releases := []string{}
 	for _, match := range releaseMatches {
+		log.Printf("usn: checking '%s'", match)
 		if match == nil {
 			continue
 		}
