@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	rss "github.com/mmcdole/gofeed"
+	"github.com/mmcdole/gofeed"
 )
 
 type USN struct {
@@ -41,7 +41,7 @@ var lineToName = map[string]string{
 	"ubuntu-22.04-lts": "jammy",
 }
 
-func USNFromFeed(item *rss.Item) *USN {
+func USNFromFeed(item *gofeed.Item) *USN {
 	log.Printf("usn: rss.Item '%s'", item.GUID)
 	_, err := url.Parse(item.GUID)
 	if err != nil {
@@ -96,9 +96,9 @@ func (u *USN) metadata() metadata {
 		log.Printf("usn: no matches found")
 	}
 
-	releases := []string{}
+	var releases []string
 	for _, match := range releaseMatches {
-		log.Printf("usn: checking '%s'", match)
+		log.Printf("usn: processing match '%+v'", match)
 		if match == nil {
 			continue
 		}
@@ -135,8 +135,8 @@ func (u *USN) CVEs() CVEList {
 		return CVEList{}
 	}
 
-	re := regexp.MustCompile(`href=\"((/|http).+?CVE-.+?)\">CVE-`)
-	links := []string{}
+	re := regexp.MustCompile(`href="((/|http).+?CVE-.+?)">CVE-`)
+	var links []string
 	for _, match := range re.FindAllStringSubmatch(u.USNPage(), -1) {
 		if match == nil {
 			continue

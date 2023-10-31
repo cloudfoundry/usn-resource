@@ -2,14 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/mmcdole/gofeed"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"log"
-
 	"github.com/cloudfoundry/usn-resource/api"
+	"github.com/mmcdole/gofeed"
 )
 
 type Source struct {
@@ -76,7 +75,7 @@ func main() {
 	}
 
 	usn := getUSN(request.Version.GUID)
-	cveURLs := []string{}
+	var cveURLs []string
 	for _, cve := range usn.CVEs() {
 		cveURLs = append(cveURLs, cve.URL)
 	}
@@ -130,7 +129,7 @@ func getUSN(guid string) *api.USN {
 }
 
 func uniq(a []string) []string {
-	r := []string{}
+	var r []string
 	m := map[string]struct{}{}
 	for _, v := range a {
 		if _, ok := m[v]; !ok {

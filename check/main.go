@@ -2,9 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"os"
-
 	"log"
+	"os"
 
 	"github.com/cloudfoundry/usn-resource/api"
 	"github.com/mmcdole/gofeed"
@@ -34,7 +33,7 @@ func main() {
 
 	fp := gofeed.NewParser()
 	feed, _ := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
-	response := []Version{}
+	var response []Version
 	for _, item := range feed.Items {
 		// if we found the current version on the feed, bail out from the loop
 		if request.Version.GUID == item.GUID {
