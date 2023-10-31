@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -66,8 +67,8 @@ func (c CVE) Priority() string {
 		return "unknown"
 	}
 
-	log.Fatalf("cve: unable to find a priority for CVE at '%s'. it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
-	panic("Unable to parse priority for CVE")
+	log.Printf("cve: unable to find a priority for CVE at '%s'. it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
+	panic(fmt.Sprintf("Unable to parse priority for CVE: '%s'", c.URL))
 }
 
 func (l CVEList) Priorities() []string {
