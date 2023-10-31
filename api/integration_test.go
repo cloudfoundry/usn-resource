@@ -12,7 +12,8 @@ import (
 var _ = Describe("CVE", func() {
 	It("can parse the latest USNs from the website", func() {
 		fp := gofeed.NewParser()
-		feed, _ := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
+		feed, err := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
+		Expect(err).NotTo(HaveOccurred())
 		Expect(feed.Items).To(HaveLen(10))
 
 		foundRealPriority := false
