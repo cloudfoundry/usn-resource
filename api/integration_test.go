@@ -32,7 +32,7 @@ var _ = Describe("CVE", func() {
 	})
 
 	It("returns an unknown priority if CVE cannot be found", func() {
-		cve := api.CVE{URL: "http://usn.ubuntu.com/usn/not-found-no-this-really-doenst-exist"}
+		cve := api.CVE{URL: "https://usn.ubuntu.com/usn/not-found-no-this-really-doenst-exist"}
 		Expect(cve.Priority()).To(Equal("unknown"))
 	})
 
