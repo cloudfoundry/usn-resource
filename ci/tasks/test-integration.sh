@@ -6,5 +6,5 @@ source ~/.bashrc
 
 cd usn-resource
 
-echo -e "\n Running unit tests..."
-go run github.com/onsi/ginkgo/ginkgo -r $race -keepGoing -trace $@
+echo -e "\n Running tests..."
+go run github.com/onsi/ginkgo/v2/ginkgo --keep-going --trace --race -vv -r $@

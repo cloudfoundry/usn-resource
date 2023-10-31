@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudfoundry/usn-resource/api"
 	"github.com/mmcdole/gofeed"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
