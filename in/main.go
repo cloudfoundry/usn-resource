@@ -114,8 +114,10 @@ func main() {
 }
 
 func getUSN(guid string) *api.USN {
-	fp := gofeed.NewParser()
-	feed, _ := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
+	feed, err := gofeed.NewParser().ParseURL(api.FeedURL)
+	if err != nil {
+		log.Fatalf("check: error parsing feed: '%s' - %v", api.FeedURL, err)
+	}
 
 	for _, item := range feed.Items {
 		if guid == item.GUID {

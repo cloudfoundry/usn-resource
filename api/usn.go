@@ -12,6 +12,8 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+const FeedURL = "https://usn.ubuntu.com/usn/rss.xml"
+
 type USN struct {
 	URL string
 

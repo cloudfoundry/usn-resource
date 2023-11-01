@@ -31,8 +31,11 @@ func main() {
 		log.Fatal("check: bad stdin: parse error", err)
 	}
 
-	fp := gofeed.NewParser()
-	feed, _ := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
+	feed, err := gofeed.NewParser().ParseURL(api.FeedURL)
+	if err != nil {
+		log.Fatalf("check: error parsing feed: '%s' - %v", api.FeedURL, err)
+	}
+
 	var response []Version
 	for _, item := range feed.Items {
 		// if we found the current version on the feed, bail out from the loop
