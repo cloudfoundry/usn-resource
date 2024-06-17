@@ -21,17 +21,26 @@ var _ = Describe("CVE", func() {
 		for _, item := range feed.Items {
 			By(fmt.Sprintf("For an item from the feed: %s", item.Title))
 			usn := api.USNFromFeed(item)
-			Expect(len(usn.Releases())).Should(BeNumerically(">", 0), "No releases were found for any usns")
+			Expect(len(usn.Releases())).Should(
+				BeNumerically(">", 0),
+				"No releases were found for any usns",
+			)
 
 			for _, priority := range usn.CVEs().Priorities() {
 				By(fmt.Sprintf("For a CVE's priority: %s", priority))
 				if priority != "unknown" {
 					foundRealPriority = true
 				}
-				Expect(priority).To(MatchRegexp(`^(?i)(critical|high|medium|low|negligible|untriaged|unknown|rejected|not in ubuntu)$`), fmt.Sprintf("Unknown priority in one of the following CVEs: %v", usn.CVEs()))
+				Expect(priority).To(
+					MatchRegexp(`^(?i)(critical|high|medium|low|negligible|untriaged|unknown|rejected|not in ubuntu)$`),
+					fmt.Sprintf("Unknown priority in one of the following CVEs: %v", usn.CVEs()),
+				)
 			}
 		}
-		Expect(foundRealPriority).To(BeTrue(), "Priority parsing seems to be broken, expected to find at least one real cve priority in 10 rss feed usns")
+		Expect(foundRealPriority).To(
+			BeTrue(),
+			"Priority parsing seems to be broken, expected to find at least one real cve priority in 10 rss feed usns",
+		)
 	})
 
 	It("returns an unknown priority if CVE cannot be found", func() {
