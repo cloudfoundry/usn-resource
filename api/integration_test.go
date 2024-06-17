@@ -12,14 +12,14 @@ import (
 
 var _ = Describe("CVE", func() {
 	It("can parse the latest USNs from the website", func() {
-		fp := gofeed.NewParser()
-		feed, err := fp.ParseURL(api.FeedURL)
+		By(fmt.Sprintf("parsing the latest USNs from %s", api.FeedURL))
+		feed, err := gofeed.NewParser().ParseURL(api.FeedURL)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(feed.Items).To(HaveLen(10))
 
 		foundRealPriority := false
 		for _, item := range feed.Items {
-			By(fmt.Sprintf("For an item from the feed: %s", item.Title))
+			By(fmt.Sprintf("and checking '%s' at %s", item.Title, item.GUID))
 			usn := api.USNFromFeed(item)
 			Expect(len(usn.Releases())).Should(
 				BeNumerically(">", 0),
@@ -27,7 +27,7 @@ var _ = Describe("CVE", func() {
 			)
 
 			for _, priority := range usn.CVEs().Priorities() {
-				By(fmt.Sprintf("For a CVE's priority: %s", priority))
+				By(fmt.Sprintf("with priority '%s'", priority))
 				if priority != "unknown" {
 					foundRealPriority = true
 				}
@@ -37,6 +37,7 @@ var _ = Describe("CVE", func() {
 				)
 			}
 		}
+
 		Expect(foundRealPriority).To(
 			BeTrue(),
 			"Priority parsing seems to be broken, expected to find at least one real cve priority in 10 rss feed usns",
