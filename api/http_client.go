@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/brotli/go/cbrotli"
+	"github.com/andybalholm/brotli"
 )
 
 const acceptEncoding = "Accept-Encoding"
@@ -37,7 +37,7 @@ func responseReaderAndStatus(url string) (io.Reader, int, error) {
 	}
 
 	if resp.Header.Get(contentEncodingHeader) == brotliEncoding {
-		responseBytes, err = cbrotli.Decode(responseBytes)
+		responseBytes, err = io.ReadAll(brotli.NewReader(bytes.NewReader(responseBytes)))
 		if err != nil {
 			return nil, 0, fmt.Errorf("http: error decoding brotli response: %w", err)
 		}

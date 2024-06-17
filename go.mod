@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.9.2
-	github.com/google/brotli/go/cbrotli v0.0.0-20240531161123-a528bce9f65b
+	github.com/andybalholm/brotli v1.1.0
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
