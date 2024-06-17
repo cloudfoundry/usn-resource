@@ -3,25 +3,28 @@ package api_test
 import (
 	"fmt"
 
-	"github.com/cloudfoundry/usn-resource/api"
 	"github.com/mmcdole/gofeed"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/cloudfoundry/usn-resource/api"
 )
 
 var _ = Describe("CVE", func() {
 	It("can parse the latest USNs from the website", func() {
 		fp := gofeed.NewParser()
-		feed, err := fp.ParseURL("https://usn.ubuntu.com/usn/rss.xml")
+		feed, err := fp.ParseURL(api.FeedURL)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(feed.Items).To(HaveLen(10))
 
 		foundRealPriority := false
 		for _, item := range feed.Items {
+			By(fmt.Sprintf("For an item from the feed: %s", item.Title))
 			usn := api.USNFromFeed(item)
 			Expect(len(usn.Releases())).Should(BeNumerically(">", 0), "No releases were found for any usns")
 
 			for _, priority := range usn.CVEs().Priorities() {
+				By(fmt.Sprintf("For a CVE's priority: %s", priority))
 				if priority != "unknown" {
 					foundRealPriority = true
 				}

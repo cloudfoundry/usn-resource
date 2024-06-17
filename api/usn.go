@@ -62,24 +62,17 @@ func (u *USN) USNPage() string {
 		return u.markdownCache
 	}
 
-	resp, err := getNonBrotliResponse(u.URL)
+	bodyReader, httpStatusCode, err := responseReaderAndStatus(u.URL)
 	if err != nil {
-		log.Fatalf("cve: failed to get '%s': %s", u.URL, err)
+		log.Fatalf("usn: failed to get '%s': %s", u.URL, err)
 	}
-	defer func(resp *http.Response) {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Printf("usn: error closing resp.Body: %v", err)
-		}
-	}(resp)
-
-	if resp.StatusCode != 200 {
-		log.Fatalf("cve: non-success HTTP Status: '%+v'", resp.Status)
+	if httpStatusCode != http.StatusOK {
+		log.Fatalf("usn: non-success HTTP Status: '%+v'", httpStatusCode)
 	}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(bodyReader)
 	if err != nil {
-		log.Fatalf("usn: failed to read HTTP response body: %v", err)
+		log.Fatalf("usn: unable to read body %+v", err)
 	}
 
 	u.markdownCache = string(bodyBytes)

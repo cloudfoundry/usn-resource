@@ -26,23 +26,17 @@ func cvesFromURLs(urls []string) CVEList {
 }
 
 func (c CVE) Priority() string {
-	resp, err := getNonBrotliResponse(c.URL)
+	bodyReader, httpStatusCode, err := responseReaderAndStatus(c.URL)
 	if err != nil {
-		log.Fatalf("cve: http.Get failed: %v", err)
+		log.Fatalf("cve: failed to get '%s': %s", c.URL, err)
 	}
-	defer func(resp *http.Response) {
-		err := resp.Body.Close()
-		if err != nil {
-			log.Printf("cve: error closing resp.Body: %v", err)
-		}
-	}(resp)
 
-	if resp.StatusCode != 200 {
-		log.Printf("cve: non-success HTTP Status: '%+v' -- defaulting priority to '%s'", resp.Status, unknownPriority)
+	if httpStatusCode != http.StatusOK {
+		log.Printf("cve: non-success HTTP Status: '%+v' -- defaulting priority to '%s'", httpStatusCode, unknownPriority)
 		return unknownPriority
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(bodyReader)
 	if err != nil {
 		log.Fatal("cve: failed to parse html: parse error", err)
 	}
@@ -74,7 +68,6 @@ func (c CVE) Priority() string {
 	}
 
 	log.Printf("cve: unable to find a priority for CVE at '%s' - it is likely that the structure of the CVE page has changed and the parsing is no longer valid", c.URL)
-	log.Printf("cve: response.Header 'Content-Encoding': '%s'", resp.Header.Get("Content-Encoding"))
 	panic(fmt.Sprintf("Unable to parse priority for CVE: '%s'", c.URL))
 }
 
