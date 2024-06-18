@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cloudfoundry/usn-resource/api"
 	"github.com/mmcdole/gofeed"
+
+	"github.com/cloudfoundry/usn-resource/api"
 )
 
 type Source struct {
