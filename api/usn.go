@@ -12,7 +12,7 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
-const FeedURL = "https://usn.ubuntu.com/usn/rss.xml"
+const FeedURL = "https://ubuntu.com/security/notices/rss.xml"
 
 type USN struct {
 	URL string
