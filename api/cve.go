@@ -50,7 +50,7 @@ func (c CVE) Priority() string {
 
 	// If a CVE has been marked as "Rejected" on the CVE page, the element where priority is displayed
 	// comes under a different CSS path.
-	priority = strings.ToLower(doc.Find(".cve-status-box--highlight > .p-heading--four").Text())
+	priority = strings.ToLower(doc.Find(".cve-status-box--highlight > .p-heading--4").Text())
 	result = strings.TrimSpace(priority)
 
 	if result != "" {
