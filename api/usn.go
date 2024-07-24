@@ -41,6 +41,7 @@ var lineToName = map[string]string{
 	"ubuntu-16.04-lts": "xenial",
 	"ubuntu-18.04-lts": "bionic",
 	"ubuntu-22.04-lts": "jammy",
+	"ubuntu-24.04-lts": "noble",
 }
 
 func USNFromFeed(item *gofeed.Item) *USN {
