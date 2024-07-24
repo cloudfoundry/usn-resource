@@ -56,7 +56,7 @@ var _ = Describe("CVE", func() {
 	})
 
 	It("parses a USN for releases affected", func() {
-		usn := api.USN{URL: "https://ubuntu.com/security/notices/USN-4653-1"}
-		Expect(usn.IsForRelease("xenial")).To(BeTrue())
+		usn := api.USN{URL: "https://ubuntu.com/security/notices/USN-6912-1"}
+		Expect(usn.IsForRelease("noble")).To(BeTrue())
 	})
 })

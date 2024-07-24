@@ -10,6 +10,7 @@ A read-only (no `put`) [Concourse](https://concourse.ci) resource for tracking
    * `xenial` or `ubuntu-16.04-lts` for Ubuntu Xenial
    * `bionic` or `ubuntu-18.04-lts` for Ubuntu Bionic
    * `jammy`  or `ubuntu-22.04-lts` for Ubuntu Jammy
+   * `noble`  or `ubuntu-24.04-lts` for Ubuntu Noble
    * ... (see filters on the USN website for more)
  * `priorities` - list of CVE priorities to trigger on
    * `medium`
