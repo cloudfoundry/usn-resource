@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
+
+	"time"
 
 	"github.com/andybalholm/brotli"
 )
@@ -25,8 +28,25 @@ func responseReaderAndStatus(url string) (io.Reader, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-
 	status := resp.StatusCode
+
+	// Let's not let Canonical's server troubles ruin our day. Retry a few times on 5xx.
+	for retryCount := 1; retryCount < 6; retryCount++ {
+		if status < 500 || status > 599 {
+			break
+		} else {
+			var sleepTime time.Duration = time.Duration(
+				math.Min(math.Pow(1, float64(retryCount)), 4))
+			time.Sleep(sleepTime * time.Second)
+
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				return nil, 0, err
+			}
+			status = resp.StatusCode
+		}
+	}
+
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, 0, fmt.Errorf("http: error readomg resp.Body: %w", err)
