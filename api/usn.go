@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/mmcdole/gofeed"
@@ -145,7 +146,8 @@ func (u *USN) CVEs() CVEList {
 			}
 		}
 	}
-	return cvesFromURLs(links)
+	slices.Sort(links)
+	return cvesFromURLs(slices.Compact(links))
 }
 
 func (u *USN) IsForRelease(release string) bool {

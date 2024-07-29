@@ -11,6 +11,23 @@ import (
 )
 
 var _ = Describe("CVE", func() {
+	Context("#CVEs", func() {
+		It("de-duplicates the list", func() {
+			usn := &api.USN{
+				URL: "https://ubuntu.com/security/notices/USN-6910-1",
+			}
+			cves := usn.CVEs()
+			expectedCves := api.CVEList{
+				api.CVE{URL: "https://ubuntu.com/security/CVE-2015-7559"},
+				api.CVE{URL: "https://ubuntu.com/security/CVE-2018-11775"},
+				api.CVE{URL: "https://ubuntu.com/security/CVE-2020-13920"},
+				api.CVE{URL: "https://ubuntu.com/security/CVE-2021-26117"},
+				api.CVE{URL: "https://ubuntu.com/security/CVE-2022-41678"},
+				api.CVE{URL: "https://ubuntu.com/security/CVE-2023-46604"},
+			}
+			Expect(cves).Should(ConsistOf(expectedCves))
+		})
+	})
 	It("can parse the latest USNs from the website", func() {
 		By(fmt.Sprintf("parsing the latest USNs from %s", api.FeedURL))
 		feed, err := gofeed.NewParser().ParseURL(api.FeedURL)
