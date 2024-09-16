@@ -72,6 +72,12 @@ var _ = Describe("CVE", func() {
 		Expect(cve.Priority()).To(Equal("medium"))
 	})
 
+	It("parses a rejected CVE", func() {
+		url := "https://ubuntu.com/security/CVE-2022-2209"
+		cve := api.CVE{URL: url}
+		Expect(cve.Priority()).To(Equal("rejected"))
+	})
+
 	It("parses a USN for releases affected", func() {
 		usn := api.USN{URL: "https://ubuntu.com/security/notices/USN-6912-1"}
 		Expect(usn.IsForRelease("noble")).To(BeTrue())
