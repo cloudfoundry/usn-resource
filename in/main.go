@@ -2,47 +2,20 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/cloudfoundry/usn-resource/api"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/mmcdole/gofeed"
-
-	"github.com/cloudfoundry/usn-resource/api"
 )
-
-type Source struct {
-	OS         string   `json:"os"`
-	Priorities []string `json:"priorities"`
-}
-
-type Version struct {
-	GUID string `json:"guid"`
-}
-
-type InRequest struct {
-	Source  Source  `json:"source"`
-	Version Version `json:"version"`
-}
 
 type MetadataField struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-type USNMetadata struct {
-	URL         string   `json:"url"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Date        string   `json:"date"`
-	Releases    []string `json:"releases"`
-	Priorities  []string `json:"priorities"`
-	CVEs        []string `json:"cves"`
-}
-
 type Response struct {
-	Version  Version         `json:"version"`
+	Version  api.Version     `json:"version"`
 	Metadata []MetadataField `json:"metadata"`
 }
 
@@ -53,7 +26,7 @@ func main() {
 		log.Fatal("in: making directory", err)
 	}
 
-	var request InRequest
+	var request api.Request
 
 	err = json.NewDecoder(os.Stdin).Decode(&request)
 	if err != nil {
@@ -75,29 +48,28 @@ func main() {
 		return
 	}
 
-	usn := getUSN(request.Version.GUID)
-	var cveURLs []string
-	for _, cve := range usn.CVEs() {
-		cveURLs = append(cveURLs, cve.URL)
+	rawData, err := api.GetOvalRawData(request.Source.OS)
+	if err != nil {
+		log.Fatalf("in: error retreiving oval data: '%s'", err)
+	}
+	ovalDefinitions, err := api.ParseOvalData(rawData)
+	if err != nil {
+		log.Fatalf("in: error parsing oval data: '%s'", err)
 	}
 
-	response.Metadata = []MetadataField{
-		{"title", usn.Title()},
-		{"url", request.Version.GUID},
-		{"description", usn.Description()},
-		{"date", usn.Date()},
-		{"releases", strings.Join(uniq(usn.Releases()), ", ")},
-		{"priorities", strings.Join(uniq(usn.CVEs().Priorities()), ", ")},
-		{"cves", strings.Join(cveURLs, ", ")},
+	def, err := ovalDefinitions.GetDefinition(request.Version.GUID)
+	if err != nil {
+		log.Fatalf("in: error retreiving USN: '%s'", err)
 	}
-	usnMetadata := USNMetadata{
-		Title:       usn.Title(),
-		URL:         request.Version.GUID,
-		Description: usn.Description(),
-		Date:        usn.Date(),
-		Releases:    uniq(usn.Releases()),
-		Priorities:  uniq(usn.CVEs().Priorities()),
-		CVEs:        cveURLs,
+	usnMetadata := def.ToUSNMetadata(request.Source.OS)
+	response.Metadata = []MetadataField{
+		{"title", usnMetadata.Title},
+		{"url", usnMetadata.URL},
+		{"description", usnMetadata.Description},
+		{"date", usnMetadata.Date},
+		{"releases", strings.Join(usnMetadata.Releases, ", ")},
+		{"priorities", strings.Join(usnMetadata.Priorities, ", ")},
+		{"cves", strings.Join(usnMetadata.CVEs, ", ")},
 	}
 	f, err := os.Create(filepath.Join(path, "usn.json"))
 	if err != nil {
@@ -112,33 +84,4 @@ func main() {
 	if err != nil {
 		log.Fatal("in: bad stdout: encode error", err)
 	}
-}
-
-func getUSN(guid string) *api.USN {
-	feed, err := gofeed.NewParser().ParseURL(api.FeedURL)
-	if err != nil {
-		log.Fatalf("check: error parsing feed: '%s' - %v", api.FeedURL, err)
-	}
-
-	for _, item := range feed.Items {
-		if guid == item.GUID {
-			return api.USNFromFeed(item)
-
-		}
-	}
-
-	log.Fatal("in: USN not found on rss feed, usn guid: ", guid)
-	return &api.USN{}
-}
-
-func uniq(a []string) []string {
-	var r []string
-	m := map[string]struct{}{}
-	for _, v := range a {
-		if _, ok := m[v]; !ok {
-			m[v] = struct{}{}
-			r = append(r, v)
-		}
-	}
-	return r
 }

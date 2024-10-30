@@ -2,65 +2,60 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/cloudfoundry/usn-resource/api"
 	"log"
 	"os"
-
-	"github.com/cloudfoundry/usn-resource/api"
-	"github.com/mmcdole/gofeed"
+	"slices"
 )
 
-type Source struct {
-	OS         string   `json:"os"`
-	Priorities []string `json:"priorities"`
-}
-
-type Version struct {
-	GUID string `json:"guid"`
-}
-
-type CheckRequest struct {
-	Source  Source  `json:"source"`
-	Version Version `json:"version"`
-}
-
 func main() {
-	var request CheckRequest
-
+	var request api.Request
 	err := json.NewDecoder(os.Stdin).Decode(&request)
+
 	if err != nil {
 		log.Fatal("check: bad stdin: parse error", err)
 	}
-
-	feed, err := gofeed.NewParser().ParseURL(api.FeedURL)
+	rawData, err := api.GetOvalRawData(request.Source.OS)
 	if err != nil {
-		log.Fatalf("check: error parsing feed: '%s' - %v", api.FeedURL, err)
+		log.Fatalf("check: error retreiving oval data: '%s'", err)
+	}
+	ovalDefinitions, err := api.ParseOvalData(rawData)
+	if err != nil {
+		log.Fatalf("check: error parsing oval data: '%s'", err)
 	}
 
-	var response []Version
-	for _, item := range feed.Items {
-		// if we found the current version on the feed, bail out from the loop
-		if request.Version.GUID == item.GUID {
-			break
-		}
-
-		usn := api.USNFromFeed(item)
-		if !usn.IsForRelease(request.Source.OS) {
-			continue
-		}
-		priorities := usn.CVEs().Priorities()
-		if !anyEqual(priorities, request.Source.Priorities) {
-			continue
-		}
-		response = append(response, Version{GUID: item.GUID})
+	versions, err := GetLatestVersions(ovalDefinitions, request.Version, request.Source.Priorities)
+	if len(versions) == 0 && request.Version.GUID == "" {
+		versions = append(versions, api.Version{GUID: "bootstrap"})
 	}
-	if len(response) == 0 && request.Version.GUID == "" {
-		response = append(response, Version{GUID: "bootstrap"})
-	}
-
-	err = json.NewEncoder(os.Stdout).Encode(&response)
+	err = json.NewEncoder(os.Stdout).Encode(&versions)
 	if err != nil {
 		log.Fatal("check: bad stdout: encode error", err)
 	}
+}
+
+func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, priorities []string) ([]api.Version, error) {
+	var versions []api.Version
+	for i := len(definitions.Definitions) - 1; i >= 0; i-- {
+		def := definitions.Definitions[i]
+		if def.Id == version.GUID {
+			break
+		}
+		cvePriorities := getCVEPriorities(def)
+		if anyEqual(cvePriorities, priorities) {
+			versions = append(versions, api.Version{GUID: def.Id})
+		}
+	}
+	slices.Reverse(versions)
+	return versions, nil
+}
+
+func getCVEPriorities(definition api.Definition) []string {
+	priorities := []string{}
+	for _, cve := range definition.Metadata.Advisory.CVEs {
+		priorities = append(priorities, cve.Priority)
+	}
+	return priorities
 }
 
 func anyEqual(a []string, s []string) bool {

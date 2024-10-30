@@ -117,6 +117,14 @@ func ParseOvalData(xml []byte) (OvalDefinitions, error) {
 }
 
 func GetOvalRawData(osStr string) ([]byte, error) {
+	var lineToName = map[string]string{
+		"ubuntu-14.04-lts": "trusty",
+		"ubuntu-16.04-lts": "xenial",
+		"ubuntu-18.04-lts": "bionic",
+		"ubuntu-22.04-lts": "jammy",
+		"ubuntu-24.04-lts": "noble",
+	}
+
 	val, ok := lineToName[osStr]
 	if ok {
 		osStr = val

@@ -1,8 +1,8 @@
-package check_new_test
+package main_test
 
 import (
 	"github.com/cloudfoundry/usn-resource/api"
-	. "github.com/cloudfoundry/usn-resource/check_new"
+	. "github.com/cloudfoundry/usn-resource/check"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -22,10 +22,10 @@ var _ = Describe("GetLatestVersion", func() {
 				definition3 := api.Definition{Id: "usn3", Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve4}}}}
 
 				definitions := api.OvalDefinitions{Definitions: []api.Definition{definition, definition2, definition3}}
-				versions, err := GetLatestVersions(definitions, Version{GUID: ""}, []string{"high"})
+				versions, err := GetLatestVersions(definitions, api.Version{GUID: ""}, []string{"high"})
 
 				Expect(err).To(BeNil())
-				Expect(versions).To(Equal([]Version{{GUID: "usn2"}, {GUID: "usn3"}}))
+				Expect(versions).To(Equal([]api.Version{{GUID: "usn2"}, {GUID: "usn3"}}))
 			})
 		})
 
@@ -34,7 +34,7 @@ var _ = Describe("GetLatestVersion", func() {
 				cve := api.OvalCVE{URL: "some-url", Priority: "low"}
 				definition := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve}}}}
 				definitions := api.OvalDefinitions{Definitions: []api.Definition{definition}}
-				versions, err := GetLatestVersions(definitions, Version{}, []string{"high"})
+				versions, err := GetLatestVersions(definitions, api.Version{}, []string{"high"})
 				Expect(err).To(BeNil())
 				Expect(len(versions)).To(Equal(0))
 			})
@@ -61,9 +61,9 @@ var _ = Describe("GetLatestVersion", func() {
 				definition5 := api.Definition{Id: "usn5", Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve6}}}}
 
 				definitions := api.OvalDefinitions{Definitions: []api.Definition{definition, definition2, definition3, definition4, definition5}}
-				versions, err := GetLatestVersions(definitions, Version{GUID: "usn3"}, []string{"high"})
+				versions, err := GetLatestVersions(definitions, api.Version{GUID: "usn3"}, []string{"high"})
 				Expect(err).To(BeNil())
-				Expect(versions).To(Equal([]Version{{GUID: "usn4"}}))
+				Expect(versions).To(Equal([]api.Version{{GUID: "usn4"}}))
 			})
 		})
 	})
