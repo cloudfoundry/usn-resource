@@ -10,6 +10,14 @@ import (
 	"net/http"
 )
 
+var lineToName = map[string]string{
+	"ubuntu-14.04-lts": "trusty",
+	"ubuntu-16.04-lts": "xenial",
+	"ubuntu-18.04-lts": "bionic",
+	"ubuntu-22.04-lts": "jammy",
+	"ubuntu-24.04-lts": "noble",
+}
+
 type OvalCVE struct {
 	URL      string `xml:"href,attr"`
 	Priority string `xml:"priority,attr"`
@@ -66,7 +74,6 @@ func (m *Metadata) GetUSNUrl() string {
 }
 
 type Definition struct {
-	Id       string   `xml:"id,attr"`
 	Metadata Metadata `xml:"metadata"`
 }
 
@@ -86,6 +93,11 @@ type USNMetadata struct {
 }
 
 func (d *Definition) ToUSNMetadata(osStr string) USNMetadata {
+	val, ok := lineToName[osStr]
+	if ok {
+		osStr = val
+	}
+
 	return USNMetadata{
 		URL:         d.Metadata.GetUSNUrl(),
 		Title:       d.Metadata.Title,
@@ -100,7 +112,7 @@ func (d *Definition) ToUSNMetadata(osStr string) USNMetadata {
 func (od *OvalDefinitions) GetDefinition(id string) (Definition, error) {
 	for i := len(od.Definitions) - 1; i >= 0; i-- {
 		def := od.Definitions[i]
-		if def.Id == id {
+		if def.Metadata.GetUSNUrl() == id {
 			return def, nil
 		}
 	}
@@ -117,14 +129,6 @@ func ParseOvalData(xml []byte) (OvalDefinitions, error) {
 }
 
 func GetOvalRawData(osStr string) ([]byte, error) {
-	var lineToName = map[string]string{
-		"ubuntu-14.04-lts": "trusty",
-		"ubuntu-16.04-lts": "xenial",
-		"ubuntu-18.04-lts": "bionic",
-		"ubuntu-22.04-lts": "jammy",
-		"ubuntu-24.04-lts": "noble",
-	}
-
 	val, ok := lineToName[osStr]
 	if ok {
 		osStr = val

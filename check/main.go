@@ -38,12 +38,12 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 	var versions []api.Version
 	for i := len(definitions.Definitions) - 1; i >= 0; i-- {
 		def := definitions.Definitions[i]
-		if def.Id == version.GUID {
+		if def.Metadata.GetUSNUrl() == version.GUID {
 			break
 		}
 		cvePriorities := getCVEPriorities(def)
 		if anyEqual(cvePriorities, priorities) {
-			versions = append(versions, api.Version{GUID: def.Id})
+			versions = append(versions, api.Version{GUID: def.Metadata.GetUSNUrl()})
 		}
 	}
 	slices.Reverse(versions)

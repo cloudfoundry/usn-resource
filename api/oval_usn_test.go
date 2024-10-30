@@ -49,7 +49,6 @@ var _ = Describe("Oval USN", func() {
 			ovalData, err := ParseOvalData(XML)
 			Expect(err).To(BeNil())
 			Expect(len(ovalData.Definitions)).To(Equal(1))
-			Expect(ovalData.Definitions[0].Id).To(Equal("oval:com.ubuntu.jammy:def:1061000000"))
 			cves := ovalData.Definitions[0].Metadata.Advisory.CVEs
 			Expect(len(cves)).To(Equal(3))
 			Expect(cves[0].URL).To(Equal("https://ubuntu.com/security/CVE-2024-36016"))
@@ -132,5 +131,21 @@ var _ = Describe("ToUSNMetadata", func() {
 		Expect(usnMetadata.Releases).To(Equal([]string{"jammy"}))
 		Expect(usnMetadata.Priorities).To(Equal([]string{"low"}))
 		Expect(usnMetadata.CVEs).To(Equal([]string{"some-url"}))
+	})
+
+	It("converts ubuntu version to os name in releases", func() {
+		cve := OvalCVE{URL: "some-url", Priority: "low"}
+		definition := Definition{Metadata: Metadata{
+			Advisory: Advisory{
+				CVEs:   []OvalCVE{cve},
+				Issued: Issued{Date: "2024-10-22"},
+			},
+			Title:       "my-definition",
+			Description: "some-description",
+			References:  []Reference{{Source: "USN", RefUrl: "some-usn-url"}},
+		}}
+
+		usnMetadata := definition.ToUSNMetadata("ubuntu-22.04-lts")
+		Expect(usnMetadata.Releases).To(Equal([]string{"jammy"}))
 	})
 })
