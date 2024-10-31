@@ -62,6 +62,11 @@ var _ = Describe("Oval USN", func() {
 	})
 
 	Context("GetOvalRawData", func() {
+		BeforeEach(func() {
+			os.Remove(ETagPath)
+			os.Remove(CachedOvalXMLPath)
+		})
+
 		Context("valid ubuntu os", func() {
 			It("returns raw data", func() {
 				data, err := GetOvalRawData("jammy")
@@ -95,7 +100,7 @@ var _ = Describe("Oval USN", func() {
 		Context("given neither os name or ubuntu version", func() {
 			It("errors", func() {
 				_, err := GetOvalRawData("randomOs")
-				Expect(err).ToNot(BeNil())
+				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("Unknown os: randomOs"))
 			})
 		})

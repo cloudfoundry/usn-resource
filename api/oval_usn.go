@@ -146,11 +146,8 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 	}
 	etag := resp.Header.Get("etag")
 
-	existingEtag, err := os.ReadFile(ETagPath)
-	if err != nil {
-		return []byte{}, err
-	}
-	if etag == string(existingEtag) {
+	existingEtag, _ := os.ReadFile(ETagPath)
+	if etag == string(existingEtag) && etag != "" {
 		existingOvalData, err := os.ReadFile(CachedOvalXMLPath)
 		if err != nil {
 			return []byte{}, err
