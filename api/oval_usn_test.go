@@ -3,9 +3,12 @@ package api_test
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	. "github.com/cloudfoundry/usn-resource/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"net/http"
+	"os"
 )
 
 var _ = Describe("Oval USN", func() {
@@ -94,6 +97,44 @@ var _ = Describe("Oval USN", func() {
 				_, err := GetOvalRawData("randomOs")
 				Expect(err).ToNot(BeNil())
 				Expect(err.Error()).To(Equal("Unknown os: randomOs"))
+			})
+		})
+		Context("when there exists a etag", func() {
+			Context("when the existing etag matches the url's etag", func() {
+				It("returns the contents of the existing file", func() {
+					osStr := "jammy"
+					url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
+					resp, err := http.Head(url)
+					Expect(err).ToNot(HaveOccurred())
+					existingETag := resp.Header.Get("etag")
+					err = os.WriteFile(ETagPath, []byte(existingETag), 0644)
+					Expect(err).ToNot(HaveOccurred())
+					cachedOvalContents := "cached-oval-contents"
+					err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
+					Expect(err).ToNot(HaveOccurred())
+
+					contents, err := GetOvalRawData(osStr)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(contents).To(Equal([]byte(cachedOvalContents)))
+				})
+			})
+
+			Context("when the existing etag does not match the url's etag", func() {
+				It("returns the xml from the url and caches the etag and xml", func() {
+					err := os.WriteFile(ETagPath, []byte("not-an-etag"), 0644)
+					Expect(err).ToNot(HaveOccurred())
+					cachedOvalContents := "cached-oval-contents"
+					err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
+
+					contents, err := GetOvalRawData("jammy")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(len(contents) > 100).To(BeTrue())
+
+					existingEtag, err := os.ReadFile(ETagPath)
+					Expect(string(existingEtag)).ToNot(Equal("not-an-etag"))
+					cachedXML, err := os.ReadFile(CachedOvalXMLPath)
+					Expect(len(cachedXML) > 100).To(BeTrue())
+				})
 			})
 		})
 	})

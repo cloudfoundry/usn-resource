@@ -8,7 +8,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path"
 )
+
+var ETagPath = path.Join("/", "tmp", "etag")
+var CachedOvalXMLPath = path.Join("/", "tmp", "oval.xml")
 
 var lineToName = map[string]string{
 	"ubuntu-14.04-lts": "trusty",
@@ -135,7 +140,25 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 	}
 
 	url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
-	resp, err := http.Get(url)
+	resp, err := http.Head(url)
+	if err != nil {
+		return []byte{}, err
+	}
+	etag := resp.Header.Get("etag")
+
+	existingEtag, err := os.ReadFile(ETagPath)
+	if err != nil {
+		return []byte{}, err
+	}
+	if etag == string(existingEtag) {
+		existingOvalData, err := os.ReadFile(CachedOvalXMLPath)
+		if err != nil {
+			return []byte{}, err
+		}
+		return existingOvalData, nil
+	}
+
+	resp, err = http.Get(url)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -152,5 +175,9 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	os.WriteFile(ETagPath, []byte(etag), 0644)
+	os.WriteFile(CachedOvalXMLPath, decompressed, 0644)
+
 	return decompressed, nil
 }
