@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"slices"
+	"strings"
 )
 
 func main() {
@@ -41,6 +42,11 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 		if def.Metadata.GetUSNUrl() == version.GUID {
 			break
 		}
+
+		if strings.Contains(def.Metadata.GetUSNUrl(), "LSN") {
+			continue
+		}
+
 		cvePriorities := getCVEPriorities(def)
 		if anyEqual(cvePriorities, priorities) {
 			versions = append(versions, api.Version{GUID: def.Metadata.GetUSNUrl()})

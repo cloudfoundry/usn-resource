@@ -39,6 +39,26 @@ var _ = Describe("GetLatestVersion", func() {
 				Expect(len(versions)).To(Equal(0))
 			})
 		})
+
+		Context("when the definition is for a Livepatch Security Notice (LSN)", func() {
+			It("does not include the version", func() {
+				cve := api.OvalCVE{URL: "some-url", Priority: "high"}
+				definition := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve}}, References: []api.Reference{{Source: "USN", RefUrl: "https://ubuntu.com/security/notices/USN-123"}}}}
+
+				cve2 := api.OvalCVE{URL: "some-url2", Priority: "low"}
+				cve3 := api.OvalCVE{URL: "some-url3", Priority: "high"}
+				definition2 := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve2, cve3}}, References: []api.Reference{{Source: "USN", RefUrl: "https://ubuntu.com/security/notices/LSN-456"}}}}
+
+				cve4 := api.OvalCVE{URL: "some-url4", Priority: "high"}
+				definition3 := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve4}}, References: []api.Reference{{Source: "USN", RefUrl: "https://ubuntu.com/security/notices/USN-789"}}}}
+
+				definitions := api.OvalDefinitions{Definitions: []api.Definition{definition, definition2, definition3}}
+				versions, err := GetLatestVersions(definitions, api.Version{GUID: ""}, []string{"high"})
+
+				Expect(err).To(BeNil())
+				Expect(versions).To(Equal([]api.Version{{GUID: "https://ubuntu.com/security/notices/USN-123"}, {GUID: "https://ubuntu.com/security/notices/USN-789"}}))
+			})
+		})
 	})
 
 	Context("when there is a version from request", func() {
