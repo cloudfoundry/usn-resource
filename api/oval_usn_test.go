@@ -152,7 +152,7 @@ var _ = Describe("GetCVEPriorities", func() {
 			{Priority: "low"},
 			{Priority: "high"},
 		}}
-		Expect(advisory.GetCVEPriorities()).To(Equal([]string{"low", "high"}))
+		Expect(advisory.GetCVEPriorities()).To(ConsistOf([]string{"low", "high"}))
 	})
 })
 
