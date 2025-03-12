@@ -14,7 +14,10 @@ import (
 
 var _ = Describe("Oval USN", func() {
 	Context("ParseOvalData", func() {
-		var XML = []byte(`<oval_definitions>
+		var XML = []byte(`<oval_definitions xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5">
+	<generator>
+		<oval:timestamp>SOME TIMESTAMP</oval:timestamp>
+	</generator>
 	<definitions>
 		<definition id="oval:com.ubuntu.jammy:def:1061000000" version="1" class="patch">
             <metadata>
@@ -52,6 +55,7 @@ var _ = Describe("Oval USN", func() {
 		It("parses the USNs", func() {
 			ovalData, err := ParseOvalData(XML)
 			Expect(err).To(BeNil())
+			Expect(ovalData.Timestamp).To(Equal("SOME TIMESTAMP"))
 			Expect(len(ovalData.Definitions)).To(Equal(1))
 			cves := ovalData.Definitions[0].Metadata.Advisory.CVEs
 			Expect(len(cves)).To(Equal(3))

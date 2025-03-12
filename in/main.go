@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/cloudfoundry/usn-resource/api"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/cloudfoundry/usn-resource/api"
 )
 
 type MetadataField struct {
@@ -56,6 +58,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("in: error parsing oval data: '%s'", err)
 	}
+
+	fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", ovalDefinitions.Timestamp)
 
 	def, err := ovalDefinitions.GetDefinition(request.Version.GUID)
 	if err != nil {

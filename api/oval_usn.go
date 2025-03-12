@@ -84,6 +84,7 @@ type Definition struct {
 
 type OvalDefinitions struct {
 	XMLName     xml2.Name    `xml:"oval_definitions"`
+	Timestamp   string       `xml:"generator>timestamp"`
 	Definitions []Definition `xml:"definitions>definition"`
 }
 
@@ -148,7 +149,7 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 
 	existingEtag, _ := os.ReadFile(ETagPath)
 	if etag == string(existingEtag) && etag != "" {
-		fmt.Printf("Using cached oval file based on etag %s\n", etag)
+		fmt.Fprintf(os.Stderr, "Using cached oval file based on etag %s\n", etag)
 		existingOvalData, err := os.ReadFile(CachedOvalXMLPath)
 		if err != nil {
 			return []byte{}, err
