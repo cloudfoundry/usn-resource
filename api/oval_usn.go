@@ -148,9 +148,13 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 
 	existingEtag, _ := os.ReadFile(ETagPath)
 	if etag == string(existingEtag) && etag != "" {
+		fmt.Printf("Using cached oval file based on etag %s\n", etag)
 		existingOvalData, err := os.ReadFile(CachedOvalXMLPath)
 		if err != nil {
 			return []byte{}, err
+		}
+		if len(existingOvalData) == 0 {
+			return []byte{}, errors.New("cached oval data is blank")
 		}
 		return existingOvalData, nil
 	}

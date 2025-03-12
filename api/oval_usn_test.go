@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"net/http"
+	"os"
+
 	. "github.com/cloudfoundry/usn-resource/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"net/http"
-	"os"
 )
 
 var _ = Describe("Oval USN", func() {
@@ -139,6 +140,25 @@ var _ = Describe("Oval USN", func() {
 					Expect(string(existingEtag)).ToNot(Equal("not-an-etag"))
 					cachedXML, err := os.ReadFile(CachedOvalXMLPath)
 					Expect(len(cachedXML) > 100).To(BeTrue())
+				})
+			})
+
+			Context("when the cache file is empty", func() {
+				It("returns an error", func() {
+					osStr := "jammy"
+					url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
+					resp, err := http.Head(url)
+					Expect(err).ToNot(HaveOccurred())
+					existingETag := resp.Header.Get("etag")
+					err = os.WriteFile(ETagPath, []byte(existingETag), 0644)
+					Expect(err).ToNot(HaveOccurred())
+
+					cachedOvalContents := ""
+					err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
+					Expect(err).ToNot(HaveOccurred())
+
+					_, err = GetOvalRawData(osStr)
+					Expect(err).To(MatchError("cached oval data is blank"))
 				})
 			})
 		})
