@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/cloudfoundry/usn-resource/api"
+	"fmt"
 	"log"
 	"os"
 	"slices"
 	"strings"
+
+	"github.com/cloudfoundry/usn-resource/api"
 )
 
 func main() {
@@ -24,6 +26,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("check: error parsing oval data: '%s'", err)
 	}
+
+	fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", ovalDefinitions.Timestamp)
 
 	versions, err := GetLatestVersions(ovalDefinitions, request.Version, request.Source.Priorities)
 	if len(versions) == 0 && request.Version.GUID == "" {
