@@ -43,9 +43,6 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 	var versions []api.Version
 	for i := len(definitions.Definitions) - 1; i >= 0; i-- {
 		def := definitions.Definitions[i]
-		if def.Metadata.GetUSNUrl() == version.GUID {
-			break
-		}
 
 		if strings.Contains(def.Metadata.GetUSNUrl(), "LSN") {
 			continue
@@ -54,6 +51,10 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 		cvePriorities := getCVEPriorities(def)
 		if anyEqual(cvePriorities, priorities) {
 			versions = append(versions, api.Version{GUID: def.Metadata.GetUSNUrl()})
+		}
+
+		if def.Metadata.GetUSNUrl() == version.GUID {
+			break
 		}
 	}
 	slices.Reverse(versions)
