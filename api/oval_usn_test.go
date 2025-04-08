@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"os"
 
-	. "github.com/cloudfoundry/usn-resource/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/cloudfoundry/usn-resource/api"
 )
 
 var _ = Describe("Oval USN", func() {
@@ -68,8 +69,8 @@ var _ = Describe("Oval USN", func() {
 
 	Context("GetOvalRawData", func() {
 		BeforeEach(func() {
-			os.Remove(ETagPath)
-			os.Remove(CachedOvalXMLPath)
+			os.Remove(ETagPath)          //nolint:errcheck
+			os.Remove(CachedOvalXMLPath) //nolint:errcheck
 		})
 
 		Context("valid ubuntu os", func() {
@@ -134,15 +135,15 @@ var _ = Describe("Oval USN", func() {
 					err := os.WriteFile(ETagPath, []byte("not-an-etag"), 0644)
 					Expect(err).ToNot(HaveOccurred())
 					cachedOvalContents := "cached-oval-contents"
-					err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
+					os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644) //nolint:errcheck
 
 					contents, err := GetOvalRawData("jammy")
 					Expect(err).ToNot(HaveOccurred())
 					Expect(len(contents) > 100).To(BeTrue())
 
-					existingEtag, err := os.ReadFile(ETagPath)
+					existingEtag, _ := os.ReadFile(ETagPath) //nolint:errcheck
 					Expect(string(existingEtag)).ToNot(Equal("not-an-etag"))
-					cachedXML, err := os.ReadFile(CachedOvalXMLPath)
+					cachedXML, _ := os.ReadFile(CachedOvalXMLPath) //nolint:errcheck
 					Expect(len(cachedXML) > 100).To(BeTrue())
 				})
 			})

@@ -29,7 +29,7 @@ func main() {
 
 	fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", ovalDefinitions.Timestamp)
 
-	versions, err := GetLatestVersions(ovalDefinitions, request.Version, request.Source.Priorities)
+	versions, _ := GetLatestVersions(ovalDefinitions, request.Version, request.Source.Priorities) //nolint:errcheck
 	if len(versions) == 0 && request.Version.GUID == "" {
 		versions = append(versions, api.Version{GUID: "bootstrap"})
 	}
