@@ -122,7 +122,7 @@ func (od *OvalDefinitions) GetDefinition(id string) (Definition, error) {
 			return def, nil
 		}
 	}
-	return Definition{}, errors.New(fmt.Sprintf("Unknown definition with id %s", id))
+	return Definition{}, errors.New(fmt.Sprintf("Unknown definition with id %s", id)) //nolint:staticcheck
 }
 
 func ParseOvalData(xml []byte) (OvalDefinitions, error) {
@@ -147,9 +147,9 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 	}
 	etag := resp.Header.Get("etag")
 
-	existingEtag, _ := os.ReadFile(ETagPath)
+	existingEtag, _ := os.ReadFile(ETagPath) //nolint:errcheck
 	if etag == string(existingEtag) && etag != "" {
-		fmt.Fprintf(os.Stderr, "Using cached oval file based on etag %s\n", etag)
+		fmt.Fprintf(os.Stderr, "Using cached oval file based on etag %s\n", etag) //nolint:errcheck
 		existingOvalData, err := os.ReadFile(CachedOvalXMLPath)
 		if err != nil {
 			return []byte{}, err
@@ -165,12 +165,12 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 		return []byte{}, err
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		return []byte{}, errors.New(fmt.Sprintf("Unknown os: %s", osStr))
+		return []byte{}, errors.New(fmt.Sprintf("Unknown os: %s", osStr)) //nolint:staticcheck
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode > 299 {
-		return []byte{}, errors.New(fmt.Sprintf("Unexpected error from server, status code: %d, url: %s", resp.StatusCode, url))
+		return []byte{}, errors.New(fmt.Sprintf("Unexpected error from server, status code: %d, url: %s", resp.StatusCode, url)) //nolint:staticcheck
 	}
 	bz2Reader := bzip2.NewReader(resp.Body)
 	decompressed, err := io.ReadAll(bz2Reader)
@@ -178,8 +178,8 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 		log.Fatal(err)
 	}
 
-	os.WriteFile(ETagPath, []byte(etag), 0644)
-	os.WriteFile(CachedOvalXMLPath, decompressed, 0644)
+	os.WriteFile(ETagPath, []byte(etag), 0644)          //nolint:errcheck
+	os.WriteFile(CachedOvalXMLPath, decompressed, 0644) //nolint:errcheck
 
 	return decompressed, nil
 }
