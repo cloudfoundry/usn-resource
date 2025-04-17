@@ -18,15 +18,15 @@ resources:
     type: docker-image
     source:
       repository: bosh/usn-resource
-      username: ((dockerhub_username))
-      password: ((dockerhub_password))
+      username: ((bosh-dockerhub.username))
+      password: ((bosh-dockerhub.password))
 
   - name: golang-release-image
     type: registry-image
     source:
       repository: bosh/golang-release
-      username: ((dockerhub_username))
-      password: ((dockerhub_password))
+      username: ((bosh-dockerhub.username))
+      password: ((bosh-dockerhub.password))
 
   - name: weekly
     type: time
