@@ -73,6 +73,7 @@ func main() {
 		{"date", usnMetadata.Date},
 		{"releases", strings.Join(usnMetadata.Releases, ", ")},
 		{"priorities", strings.Join(usnMetadata.Priorities, ", ")},
+		{"severities", strings.Join(usnMetadata.Severities, ", ")},
 		{"cves", strings.Join(usnMetadata.CVEs, ", ")},
 	}
 	f, err := os.Create(filepath.Join(path, "usn.json"))

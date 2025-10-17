@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"slices"
 )
 
 var ETagPath = path.Join("/", "tmp", "etag")
@@ -24,8 +25,9 @@ var lineToName = map[string]string{
 }
 
 type OvalCVE struct {
-	URL      string `xml:"href,attr"`
-	Priority string `xml:"priority,attr"`
+	URL          string `xml:"href,attr"`
+	Priority     string `xml:"priority,attr"`
+	CVSSSeverity string `xml:"cvss_severity,attr"`
 }
 
 type Issued struct {
@@ -46,15 +48,27 @@ func (a *Advisory) GetCVEUrls() []string {
 }
 
 func (a *Advisory) GetCVEPriorities() []string {
-	priorities := make(map[string]bool)
-	for _, cve := range a.CVEs {
-		priorities[cve.Priority] = true
-	}
-	keys := make([]string, 0, len(priorities))
-	for k := range priorities {
-		keys = append(keys, k)
-	}
-	return keys
+	return extractUniqueFieldsWithIterFunc(func(yield func(string) bool) {
+		for _, cve := range a.CVEs {
+			if !yield(cve.Priority) {
+				return
+			}
+		}
+	})
+}
+
+func (a *Advisory) GetCVESeverities() []string {
+	return extractUniqueFieldsWithIterFunc(func(yield func(string) bool) {
+		for _, cve := range a.CVEs {
+			if !yield(cve.CVSSSeverity) {
+				return
+			}
+		}
+	})
+}
+
+func extractUniqueFieldsWithIterFunc(iterFunc func(yield func(string) bool)) []string {
+	return slices.Compact(slices.Sorted(iterFunc))
 }
 
 type Reference struct {
@@ -95,6 +109,7 @@ type USNMetadata struct {
 	Date        string   `json:"date"`
 	Releases    []string `json:"releases"`
 	Priorities  []string `json:"priorities"`
+	Severities  []string `json:"severities"`
 	CVEs        []string `json:"cves"`
 }
 
@@ -111,6 +126,7 @@ func (d *Definition) ToUSNMetadata(osStr string) USNMetadata {
 		Date:        d.Metadata.Advisory.Issued.Date,
 		Releases:    []string{osStr},
 		Priorities:  d.Metadata.Advisory.GetCVEPriorities(),
+		Severities:  d.Metadata.Advisory.GetCVESeverities(),
 		CVEs:        d.Metadata.Advisory.GetCVEUrls(),
 	}
 }
