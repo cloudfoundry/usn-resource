@@ -12,12 +12,45 @@ A read-only (no `put`) [Concourse](https://concourse.ci) resource for tracking
    * `jammy`  or `ubuntu-22.04-lts` for Ubuntu Jammy
    * `noble`  or `ubuntu-24.04-lts` for Ubuntu Noble
    * ... (see filters on the USN website for more)
- * `priorities` - list of CVE priorities to trigger on
+ * `priorities` - list of Ubuntu CVE [priorities](https://ubuntu.com/security/cves/about#priority) to trigger on, including:
+   * `low`
    * `medium`
    * `high`
    * `critical`
    * `unknown` when CVE reference gives http error
+* `severities` - list of CVSS CVE [severities](https://nvd.nist.gov/vuln-metrics/cvss) to trigger on, including:
+    * `low`
+    * `medium`
+    * `high`
+    * `critical`
 
+The resource will trigger if _either_ the configured priorities _or_ severities match a usn.
+For example, https://ubuntu.com/security/CVE-2025-9230 has a CVSS severity of `high` but a
+Ubuntu priority of `medium`.
+
+The following configuration would NOT trigger for `CVE-2025-9230`:
+```yaml
+- name: high-critical-priority
+  type: usn
+  source:
+    os: ubuntu-22.04-lts
+    priorities:
+    - high
+    - critical
+```
+
+whereas the following configuration WOULD:
+```yaml
+- name: high-critical-priority
+  type: usn
+  source:
+    os: ubuntu-22.04-lts
+    priorities:
+    - high
+    - critical
+    severities:
+    - high
+```
 
 ## `check`
 
@@ -45,5 +78,4 @@ Not a thing for this read-only resource.
 
 
 ## Development
-- A simple set of tests live in `api/integration_test.go`
-- After a change, building and pushing the docker image manually (it's not pipelined) is needed for most people to consume this
+- To run tests, use `go run github.com/onsi/ginkgo/v2/ginkgo --keep-going --trace --race -vv -r` from the root of the repository.

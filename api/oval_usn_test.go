@@ -20,33 +20,30 @@ var _ = Describe("Oval USN", func() {
 		<oval:timestamp>SOME TIMESTAMP</oval:timestamp>
 	</generator>
 	<definitions>
-		<definition id="oval:com.ubuntu.jammy:def:1061000000" version="1" class="patch">
+		<definition id="oval:com.ubuntu.noble:def:77861000000" version="1" class="patch">
             <metadata>
-                <title>LSN-0106-1 -- Kernel Live Patch Security Notice</title>
+                <title>USN-7786-1 -- OpenSSL vulnerabilities</title>
                 <affected family="unix">
-                    <platform>Ubuntu 22.04 LTS</platform>
+                    <platform>Ubuntu 24.04 LTS</platform>
                 </affected>
-                <reference source="USN" ref_id="LSN-0106-1" ref_url="https://ubuntu.com/security/notices/LSN-0106-1"/>
-                <reference source="CVE" ref_id="CVE-2024-36016" ref_url="https://ubuntu.com/security/CVE-2024-36016"/>
-                <reference source="CVE" ref_id="CVE-2024-26585" ref_url="https://ubuntu.com/security/CVE-2024-26585"/>
-                <reference source="CVE" ref_id="CVE-2023-52620" ref_url="https://ubuntu.com/security/CVE-2023-52620"/>
-                <description>In the Linux kernel, the following vulnerability has been resolved: netfilter: nf_tables: disallow timeout for anonymous sets Never used from userspace, disallow these parameters.(CVE-2023-52620)  In the Linux kernel, the following vulnerability has been resolved: tls: fix race between tx work scheduling and socket close Similarly to previous commit, the submitting thread (recvmsg/sendmsg) may exit as soon as the async crypto handler calls complete(). Reorder scheduling the work before calling complete(). This seems more logical in the first place, as it's the inverse order of what the submitting thread will do.(CVE-2024-26585)  In the Linux kernel, the following vulnerability has been resolved: tty: n_gsm: fix possible out-of-bounds in gsm0_receive() Assuming the following: - side A configures the n_gsm in basic option mode - side B sends the header of a basic option mode frame with data length 1 - side A switches to advanced option mode - side B sends 2 data bytes which exceeds gsm-&gt;len Reason: gsm-&gt;len is not used in advanced option mode. - side A switches to basic option mode - side B keeps sending until gsm0_receive() writes past gsm-&gt;buf Reason: Neither gsm-&gt;state nor gsm-&gt;len have been reset after reconfiguration. Fix this by changing gsm-&gt;count to gsm-&gt;len comparison from equal to less than. Also add upper limit checks against the constant MAX_MRU in gsm0_receive() and gsm1_receive() to harden against memory corruption of gsm-&gt;len and gsm-&gt;mru. All other checks remain as we still need to limit the data according to the user configuration and actual payload size.(CVE-2024-36016)  To check your kernel type and Livepatch version, enter this command:  canonical-livepatch status  lkp_Ubuntu_5_15_0[_|\d]+_aws_(\d+) - 106 lkp_Ubuntu_5_15_0[_|\d]+_azure_(\d+) - 106 lkp_Ubuntu_5_15_0[_|\d]+_gcp_(\d+) - 106 lkp_Ubuntu_5_15_0[_|\d]+_linux_(\d+) - 106 lkp_Ubuntu_5_15_0[_|\d]+_gke_(\d+) - 106 lkp_Ubuntu_5_15_0[_|\d]+_ibm_(\d+) - 106 lkp_Ubuntu_5_15_0[_|\d]+_oracle_(\d+) - 106 Livepatch subscription required</description>
+                <reference source="USN" ref_id="USN-7786-1" ref_url="https://ubuntu.com/security/notices/USN-7786-1"/>
+                <reference source="CVE" ref_id="CVE-2025-9231" ref_url="https://ubuntu.com/security/CVE-2025-9231"/>
+                <reference source="CVE" ref_id="CVE-2025-9232" ref_url="https://ubuntu.com/security/CVE-2025-9232"/>
+                <reference source="CVE" ref_id="CVE-2025-9230" ref_url="https://ubuntu.com/security/CVE-2025-9230"/>
+                <description>Stanislav Fort discovered that OpenSSL incorrectly handled memory when trying to decrypt CMS messages encrypted with password-based encryption. An attacker could possibly use this issue to cause a denial of service or execute arbitrary code. (CVE-2025-9230)  Stanislav Fort discovered that OpenSSL had a timing side-channel in SM2 signature computations on ARM platforms. A remote attacker could possibly use this issue to recover private data. This issue only affected Ubuntu 25.04. (CVE-2025-9231)  Stanislav Fort discovered that OpenSSL incorrectly handled memory during HTTP requests when "no_proxy" environment variable is set. An attacker could possibly use this issue to cause a denial of service. This issue only affected Ubuntu 25.04. (CVE-2025-9232)  Update Instructions:  Run 'sudo pro fix USN-7786-1' to fix the vulnerability. The problem can be corrected by updating your system to the following package versions:  libssl-dev - 3.0.13-0ubuntu3.6 libssl-doc - 3.0.13-0ubuntu3.6 libssl3t64 - 3.0.13-0ubuntu3.6 openssl - 3.0.13-0ubuntu3.6 No subscription required</description>
                 <advisory from="security@ubuntu.com">
-                    <severity>High</severity>
-                    <issued date="2024-08-20"/>
-                    <cve href="https://ubuntu.com/security/CVE-2024-36016" priority="high" public="20240529" usns="6923-1,6921-1,6924-1,6926-1,6921-2,6923-2,6927-1,6924-2,6938-1,6926-2,6952-1,6953-1,6926-3,6956-1,6957-1,6952-2,6979-1,7019-1">CVE-2024-36016</cve>
-                    <cve href="https://ubuntu.com/security/CVE-2024-26585" priority="high" public="20240221" cvss_score="4.7" cvss_vector="CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H" cvss_severity="medium" usns="6818-1,6819-1,6820-1,6821-1,6818-2,6821-2,6828-1,6820-2,6821-3,6819-2,6819-3,6818-3,6821-4,6818-4,6819-4,6871-1,6892-1,6919-1,6924-1,6924-2,6953-1,6979-1">CVE-2024-26585</cve>
-                    <cve href="https://ubuntu.com/security/CVE-2023-52620" priority="high" public="20240321" usns="6820-1,6821-1,6821-2,6828-1,6820-2,6821-3,6821-4,6871-1,6892-1,6896-1,6896-2,6896-3,6896-4,6896-5,6919-1,6926-1,6938-1,6926-2,6926-3">CVE-2023-52620</cve>
+                    <severity>Medium</severity>
+                    <issued date="2025-09-30"/>
+                    <cve href="https://ubuntu.com/security/CVE-2025-9231" priority="medium" public="20250930" cvss_score="6.5" cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:L" cvss_severity="medium" usns="7786-1">CVE-2025-9231</cve>
+                    <cve href="https://ubuntu.com/security/CVE-2025-9232" priority="low" public="20250930" cvss_score="5.9" cvss_vector="CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H" cvss_severity="medium" usns="7786-1">CVE-2025-9232</cve>
+                    <cve href="https://ubuntu.com/security/CVE-2025-9230" priority="medium" public="20250930" cvss_score="7.5" cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H" cvss_severity="high" usns="7786-1">CVE-2025-9230</cve>
                     
                 </advisory>
             </metadata>
             <criteria>
-                <extend_definition definition_ref="oval:com.ubuntu.jammy:def:100" comment="Ubuntu 22.04 LTS (jammy) is installed." applicability_check="true" />
+                <extend_definition definition_ref="oval:com.ubuntu.noble:def:100" comment="Ubuntu 24.04 LTS (noble) is installed." applicability_check="true" />
                 <criteria operator="OR">
-                    <criteria operator="AND">
-                        <criterion test_ref="oval:com.ubuntu.jammy:tst:10610000001" comment="Long Term Support" />
-                        <criterion test_ref="oval:com.ubuntu.jammy:tst:10610000000" comment="Long Term Support" />
-                    </criteria>
+                    <criterion test_ref="oval:com.ubuntu.noble:tst:778610000000" comment="Long Term Release" />
                 </criteria>
             </criteria>
         </definition>
@@ -58,12 +55,14 @@ var _ = Describe("Oval USN", func() {
 			Expect(err).To(BeNil())
 			Expect(ovalData.Timestamp).To(Equal("SOME TIMESTAMP"))
 			Expect(len(ovalData.Definitions)).To(Equal(1))
+
 			cves := ovalData.Definitions[0].Metadata.Advisory.CVEs
 			Expect(len(cves)).To(Equal(3))
-			Expect(cves[0].URL).To(Equal("https://ubuntu.com/security/CVE-2024-36016"))
-			Expect(cves[0].Priority).To(Equal("high"))
+			Expect(cves[2].URL).To(Equal("https://ubuntu.com/security/CVE-2025-9230"))
+			Expect(cves[2].Priority).To(Equal("medium"))
+			Expect(cves[2].CVSSSeverity).To(Equal("high"))
 
-			Expect(ovalData.Definitions[0].Metadata.GetUSNUrl()).To(Equal("https://ubuntu.com/security/notices/LSN-0106-1"))
+			Expect(ovalData.Definitions[0].Metadata.GetUSNUrl()).To(Equal("https://ubuntu.com/security/notices/USN-7786-1"))
 		})
 	})
 
@@ -181,9 +180,21 @@ var _ = Describe("GetCVEPriorities", func() {
 	})
 })
 
+var _ = Describe("GetCVESeverities", func() {
+	It("returns a list of deduplicated severities", func() {
+		advisory := Advisory{CVEs: []OvalCVE{
+			{CVSSSeverity: "low"},
+			{CVSSSeverity: "medium"},
+			{CVSSSeverity: "low"},
+			{CVSSSeverity: "high"},
+		}}
+		Expect(advisory.GetCVESeverities()).To(ConsistOf([]string{"low", "medium", "high"}))
+	})
+})
+
 var _ = Describe("ToUSNMetadata", func() {
 	It("converts to USNMetadata", func() {
-		cve := OvalCVE{URL: "some-url", Priority: "low"}
+		cve := OvalCVE{URL: "some-url", Priority: "low", CVSSSeverity: "medium"}
 		definition := Definition{Metadata: Metadata{
 			Advisory: Advisory{
 				CVEs:   []OvalCVE{cve},
@@ -201,11 +212,12 @@ var _ = Describe("ToUSNMetadata", func() {
 		Expect(usnMetadata.Date).To(Equal("2024-10-22"))
 		Expect(usnMetadata.Releases).To(Equal([]string{"jammy"}))
 		Expect(usnMetadata.Priorities).To(Equal([]string{"low"}))
+		Expect(usnMetadata.Severities).To(Equal([]string{"medium"}))
 		Expect(usnMetadata.CVEs).To(Equal([]string{"some-url"}))
 	})
 
 	It("converts ubuntu version to os name in releases", func() {
-		cve := OvalCVE{URL: "some-url", Priority: "low"}
+		cve := OvalCVE{URL: "some-url", Priority: "low", CVSSSeverity: "medium"}
 		definition := Definition{Metadata: Metadata{
 			Advisory: Advisory{
 				CVEs:   []OvalCVE{cve},

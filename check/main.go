@@ -27,9 +27,12 @@ func main() {
 		log.Fatalf("check: error parsing oval data: '%s'", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", ovalDefinitions.Timestamp)
+	_, err = fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", ovalDefinitions.Timestamp)
+	if err != nil {
+		log.Fatalf("check: error writing to stderr: '%s'", err)
+	}
 
-	versions, _ := GetLatestVersions(ovalDefinitions, request.Version, request.Source.Priorities) //nolint:errcheck
+	versions := GetLatestVersions(ovalDefinitions, request.Version, request.Source.Priorities, request.Source.Severities)
 	if len(versions) == 0 && request.Version.GUID == "" {
 		versions = append(versions, api.Version{GUID: "bootstrap"})
 	}
@@ -39,7 +42,7 @@ func main() {
 	}
 }
 
-func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, priorities []string) ([]api.Version, error) {
+func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, priorities []string, severities []string) []api.Version {
 	var versions []api.Version
 	for i := len(definitions.Definitions) - 1; i >= 0; i-- {
 		def := definitions.Definitions[i]
@@ -48,8 +51,7 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 			continue
 		}
 
-		cvePriorities := getCVEPriorities(def)
-		if anyEqual(cvePriorities, priorities) {
+		if anyEqual(getCVEPriorities(def), priorities) || anyEqual(getCVESeverities(def), severities) {
 			versions = append(versions, api.Version{GUID: def.Metadata.GetUSNUrl()})
 		}
 
@@ -58,7 +60,7 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 		}
 	}
 	slices.Reverse(versions)
-	return versions, nil
+	return versions
 }
 
 func getCVEPriorities(definition api.Definition) []string {
@@ -67,6 +69,14 @@ func getCVEPriorities(definition api.Definition) []string {
 		priorities = append(priorities, cve.Priority)
 	}
 	return priorities
+}
+
+func getCVESeverities(definition api.Definition) []string {
+	severities := []string{}
+	for _, cve := range definition.Metadata.Advisory.CVEs {
+		severities = append(severities, cve.CVSSSeverity)
+	}
+	return severities
 }
 
 func anyEqual(a []string, s []string) bool {
