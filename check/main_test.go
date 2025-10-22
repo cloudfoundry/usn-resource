@@ -119,6 +119,24 @@ var _ = Describe("GetLatestVersion", func() {
 				versions := GetLatestVersions(definitions, api.Version{GUID: "usn3-url"}, priorities, severities)
 				Expect(versions).To(Equal([]api.Version{{GUID: "usn3-url"}, {GUID: "usn4-url"}}))
 			})
+
+			Context("when there is no definition for the version in the request", func() {
+				It("doesn't return new versions", func() {
+					cve := api.OvalCVE{URL: "some-url", Priority: "high"}
+					definition := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve}}, References: []api.Reference{{Source: "USN", RefUrl: "usn1-url"}}}}
+
+					cve2 := api.OvalCVE{URL: "some-url2", Priority: "low"}
+					cve3 := api.OvalCVE{URL: "some-url3", Priority: "high"}
+					definition2 := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve2, cve3}}, References: []api.Reference{{Source: "USN", RefUrl: "usn2-url"}}}}
+
+					cve4 := api.OvalCVE{URL: "some-url4", Priority: "high"}
+					definition3 := api.Definition{Metadata: api.Metadata{Advisory: api.Advisory{CVEs: []api.OvalCVE{cve4}}, References: []api.Reference{{Source: "USN", RefUrl: "usn3-url"}}}}
+
+					definitions := api.OvalDefinitions{Definitions: []api.Definition{definition, definition2, definition3}}
+					versions := GetLatestVersions(definitions, api.Version{GUID: "usn4-url"}, priorities, severities)
+					Expect(versions).To(Equal([]api.Version{}))
+				})
+			})
 		})
 	})
 })
