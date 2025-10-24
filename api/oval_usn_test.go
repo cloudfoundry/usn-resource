@@ -67,14 +67,17 @@ var _ = Describe("Oval USN", func() {
 	})
 
 	Context("GetOvalRawData", func() {
+		var ignoreCache bool
+
 		BeforeEach(func() {
 			os.Remove(ETagPath)          //nolint:errcheck
 			os.Remove(CachedOvalXMLPath) //nolint:errcheck
+			ignoreCache = false
 		})
 
 		Context("valid ubuntu os", func() {
 			It("returns raw data", func() {
-				data, err := GetOvalRawData("jammy")
+				data, err := GetOvalRawData("jammy", ignoreCache)
 				Expect(err).To(BeNil())
 				Expect(len(data) > 0).To(BeTrue())
 				decoder := xml.NewDecoder(bytes.NewReader(data))
@@ -89,7 +92,7 @@ var _ = Describe("Oval USN", func() {
 		})
 		Context("given ubuntu version number", func() {
 			It("returns raw data", func() {
-				data, err := GetOvalRawData("ubuntu-22.04-lts")
+				data, err := GetOvalRawData("ubuntu-22.04-lts", ignoreCache)
 				Expect(err).To(BeNil())
 				Expect(len(data) > 0).To(BeTrue())
 				decoder := xml.NewDecoder(bytes.NewReader(data))
@@ -104,7 +107,7 @@ var _ = Describe("Oval USN", func() {
 		})
 		Context("given neither os name or ubuntu version", func() {
 			It("errors", func() {
-				_, err := GetOvalRawData("randomOs")
+				_, err := GetOvalRawData("randomOs", ignoreCache)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("Unknown os: randomOs"))
 			})
@@ -123,7 +126,7 @@ var _ = Describe("Oval USN", func() {
 					err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
 					Expect(err).ToNot(HaveOccurred())
 
-					contents, err := GetOvalRawData(osStr)
+					contents, err := GetOvalRawData(osStr, ignoreCache)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(contents).To(Equal([]byte(cachedOvalContents)))
 				})
@@ -136,7 +139,7 @@ var _ = Describe("Oval USN", func() {
 					cachedOvalContents := "cached-oval-contents"
 					os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644) //nolint:errcheck
 
-					contents, err := GetOvalRawData("jammy")
+					contents, err := GetOvalRawData("jammy", ignoreCache)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(len(contents) > 100).To(BeTrue())
 
@@ -161,10 +164,43 @@ var _ = Describe("Oval USN", func() {
 					err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
 					Expect(err).ToNot(HaveOccurred())
 
-					_, err = GetOvalRawData(osStr)
+					_, err = GetOvalRawData(osStr, ignoreCache)
 					Expect(err).To(MatchError("cached oval data is blank"))
 				})
 			})
+
+			Context("when cache is disabled", func() {
+				BeforeEach(func() {
+					ignoreCache = true
+				})
+
+				Context("when the existing etag matches the url's etag", func() {
+					It("does not read from the cache", func() {
+						osStr := "jammy"
+						url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
+						resp, err := http.Head(url)
+						Expect(err).ToNot(HaveOccurred())
+
+						existingETag := resp.Header.Get("etag")
+						err = os.WriteFile(ETagPath, []byte(existingETag), 0644)
+						Expect(err).ToNot(HaveOccurred())
+
+						cachedOvalContents := "cached-oval-contents"
+						err = os.WriteFile(CachedOvalXMLPath, []byte(cachedOvalContents), 0644)
+						Expect(err).ToNot(HaveOccurred())
+
+						By("reading new data from the url")
+						contents, err := GetOvalRawData("jammy", ignoreCache)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(len(contents) > 100).To(BeTrue())
+
+						By("writing the new data to the cache")
+						cachedXML, _ := os.ReadFile(CachedOvalXMLPath) //nolint:errcheck
+						Expect(len(cachedXML) > 100).To(BeTrue())
+					})
+				})
+			})
+
 		})
 	})
 })
