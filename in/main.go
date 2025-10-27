@@ -50,7 +50,7 @@ func main() {
 		return
 	}
 
-	rawData, err := api.GetOvalRawData(request.Source.OS)
+	rawData, err := api.GetOvalRawData(request.Source.OS, request.Source.IgnoreCache)
 	if err != nil {
 		log.Fatalf("in: error retreiving oval data: '%s'", err)
 	}
