@@ -24,9 +24,7 @@ resources:
   - name: golang-release-image
     type: registry-image
     source:
-      repository: bosh/golang-release
-      username: ((bosh-dockerhub.username))
-      password: ((bosh-dockerhub.password))
+      repository: ghcr.io/cloudfoundry/bosh/golang-release
 
   - name: weekly
     type: time
@@ -45,12 +43,14 @@ jobs:
         trigger: true
       - task: test-integration
         file: usn-resource/ci/tasks/test-integration.yml
+        image: golang-release-image
 
   - name: bump-deps
     plan:
     - in_parallel:
       - get: usn-resource
       - get: golang-release
+      - get: golang-release-image
       - get: weekly
         trigger: true
     - task: bump-deps
@@ -61,6 +61,7 @@ jobs:
         output_repo: bumped-usn-resource
     - task: test-integration
       file: usn-resource/ci/tasks/test-integration.yml
+      image: golang-release-image
       input_mapping:
         usn-resource: bumped-usn-resource
     - put: usn-resource
