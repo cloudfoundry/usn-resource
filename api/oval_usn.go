@@ -150,7 +150,7 @@ func ParseOvalData(xml []byte) (OvalDefinitions, error) {
 	return ovalDefinitions, nil
 }
 
-func GetOvalRawData(osStr string) ([]byte, error) {
+func GetOvalRawData(osStr string, ignoreCache bool) ([]byte, error) {
 	val, ok := lineToName[osStr]
 	if ok {
 		osStr = val
@@ -164,7 +164,7 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 	etag := resp.Header.Get("etag")
 
 	existingEtag, _ := os.ReadFile(ETagPath) //nolint:errcheck
-	if etag == string(existingEtag) && etag != "" {
+	if etag == string(existingEtag) && etag != "" && !ignoreCache {
 		fmt.Fprintf(os.Stderr, "Using cached oval file based on etag %s\n", etag) //nolint:errcheck
 		existingOvalData, err := os.ReadFile(CachedOvalXMLPath)
 		if err != nil {
