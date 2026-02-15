@@ -18,7 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatal("check: bad stdin: parse error", err)
 	}
-	rawData, err := api.GetOvalRawData(request.Source.OS)
+	rawData, err := api.GetOvalRawData(request.Source.OS, request.Source.IgnoreCache)
 	if err != nil {
 		log.Fatalf("check: error retreiving oval data: '%s'", err)
 	}
