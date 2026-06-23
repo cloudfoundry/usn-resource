@@ -15,9 +15,10 @@ resources:
       uri: https://github.com/cloudfoundry/bosh-package-golang-release.git
 
   - name: usn-image
-    type: docker-image
+    type: registry-image
     source:
       repository: bosh/usn-resource
+      tag: latest
       username: ((bosh-dockerhub.username))
       password: ((bosh-dockerhub.password))
 
@@ -81,7 +82,23 @@ jobs:
       - task: build
         file: usn-resource/ci/tasks/build.yml
         image: golang-release-image
+      - task: build-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: concourse/oci-build-task
+          inputs:
+            - name: usn-resource
+          outputs:
+            - name: image
+          params:
+            CONTEXT: usn-resource/docker
+          run:
+            path: build
       - put: usn-image
+        no_get: true
         params:
-          build: usn-resource/docker
-          dockerfile: usn-resource/docker/Dockerfile
+          image: image/image.tar
