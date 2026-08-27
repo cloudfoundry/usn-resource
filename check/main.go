@@ -47,15 +47,18 @@ func GetLatestVersions(definitions api.OvalDefinitions, version api.Version, pri
 	for i := len(definitions.Definitions) - 1; i >= 0; i-- {
 		def := definitions.Definitions[i]
 
-		if strings.Contains(def.Metadata.GetUSNUrl(), "LSN") {
+		// Definitions without a USN reference are the inventory definition and
+		// Livepatch notices, which the OVAL generator marks source="LSN".
+		usnURL := def.Metadata.GetUSNUrl()
+		if usnURL == "" || strings.Contains(usnURL, "LSN") {
 			continue
 		}
 
 		if anyEqual(getCVEPriorities(def), priorities) || anyEqual(getCVESeverities(def), severities) {
-			versions = append(versions, api.Version{GUID: def.Metadata.GetUSNUrl()})
+			versions = append(versions, api.Version{GUID: usnURL})
 		}
 
-		if def.Metadata.GetUSNUrl() == version.GUID {
+		if usnURL == version.GUID {
 			break
 		}
 	}

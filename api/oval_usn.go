@@ -132,6 +132,9 @@ func (d *Definition) ToUSNMetadata(osStr string) USNMetadata {
 }
 
 func (od *OvalDefinitions) GetDefinition(id string) (Definition, error) {
+	if id == "" {
+		return Definition{}, errors.New("cannot look up definition with empty id")
+	}
 	for i := len(od.Definitions) - 1; i >= 0; i-- {
 		def := od.Definitions[i]
 		if def.Metadata.GetUSNUrl() == id {
