@@ -232,3 +232,20 @@ var _ = Describe("ToUSNMetadata", func() {
 		Expect(usnMetadata.Releases).To(Equal([]string{"jammy"}))
 	})
 })
+
+var _ = Describe("GetDefinition", func() {
+	Context("when the id is empty", func() {
+		It("returns an error rather than matching a definition without a USN reference", func() {
+			// Canonical's OVAL generator v2 emits Livepatch notices with
+			// source="LSN", so GetUSNUrl returns "" for them.
+			lsnDefinition := Definition{Metadata: Metadata{
+				References: []Reference{{Source: "LSN", RefUrl: "https://ubuntu.com/security/notices/LSN-120-1"}},
+			}}
+			definitions := OvalDefinitions{Definitions: []Definition{lsnDefinition}}
+
+			_, err := definitions.GetDefinition("")
+
+			Expect(err).To(MatchError("cannot look up definition with empty id"))
+		})
+	})
+})

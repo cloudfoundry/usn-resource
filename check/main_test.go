@@ -1,6 +1,9 @@
 package main_test
 
 import (
+	"path/filepath"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -120,5 +123,141 @@ var _ = Describe("GetLatestVersion", func() {
 				Expect(versions).To(Equal([]api.Version{{GUID: "usn3-url"}, {GUID: "usn4-url"}}))
 			})
 		})
+	})
+})
+
+var _ = Describe("GetLatestVersions with current-format OVAL data", func() {
+	var (
+		priorities = []string{"high", "critical"}
+		severities = []string{"high", "critical"}
+	)
+
+	usnDefinition := func(refURL string, priority string) api.Definition {
+		return api.Definition{Metadata: api.Metadata{
+			Advisory:   api.Advisory{CVEs: []api.OvalCVE{{URL: "cve-url", Priority: priority}}},
+			References: []api.Reference{{Source: "USN", RefUrl: refURL}},
+		}}
+	}
+
+	// Canonical's OVAL generator v2 emits Livepatch notices with source="LSN"
+	// rather than source="USN", and places them after every USN definition.
+	lsnDefinition := func(refURL string, priority string) api.Definition {
+		return api.Definition{Metadata: api.Metadata{
+			Advisory:   api.Advisory{CVEs: []api.OvalCVE{{URL: "cve-url", Priority: priority}}},
+			References: []api.Reference{{Source: "LSN", RefUrl: refURL}},
+		}}
+	}
+
+	// The class="inventory" definition carries no references at all.
+	inventoryDefinition := func() api.Definition {
+		return api.Definition{Metadata: api.Metadata{Title: "Check that Ubuntu 22.04 LTS (jammy) is installed."}}
+	}
+
+	Context("when a Livepatch notice uses source=\"LSN\"", func() {
+		It("does not include the Livepatch notice as a version", func() {
+			definitions := api.OvalDefinitions{Definitions: []api.Definition{
+				inventoryDefinition(),
+				usnDefinition("https://ubuntu.com/security/notices/USN-8528-1", "high"),
+				usnDefinition("https://ubuntu.com/security/notices/USN-8536-1", "high"),
+				lsnDefinition("https://ubuntu.com/security/notices/LSN-120-1", "high"),
+			}}
+
+			versions := GetLatestVersions(definitions, api.Version{GUID: "https://ubuntu.com/security/notices/USN-8528-1"}, priorities, severities)
+
+			Expect(versions).To(Equal([]api.Version{
+				{GUID: "https://ubuntu.com/security/notices/USN-8528-1"},
+				{GUID: "https://ubuntu.com/security/notices/USN-8536-1"},
+			}))
+		})
+	})
+
+	Context("when a definition has no USN reference", func() {
+		It("never emits a version with an empty GUID", func() {
+			definitions := api.OvalDefinitions{Definitions: []api.Definition{
+				inventoryDefinition(),
+				usnDefinition("https://ubuntu.com/security/notices/USN-8536-1", "high"),
+				lsnDefinition("https://ubuntu.com/security/notices/LSN-120-1", "high"),
+			}}
+
+			versions := GetLatestVersions(definitions, api.Version{GUID: ""}, priorities, severities)
+
+			for _, version := range versions {
+				Expect(version.GUID).ToNot(BeEmpty())
+			}
+		})
+	})
+
+	Context("when the previous version is an empty GUID", func() {
+		It("does not stop at a definition without a USN reference", func() {
+			definitions := api.OvalDefinitions{Definitions: []api.Definition{
+				inventoryDefinition(),
+				usnDefinition("https://ubuntu.com/security/notices/USN-8528-1", "high"),
+				usnDefinition("https://ubuntu.com/security/notices/USN-8536-1", "high"),
+				lsnDefinition("https://ubuntu.com/security/notices/LSN-120-1", "high"),
+			}}
+
+			versions := GetLatestVersions(definitions, api.Version{GUID: ""}, priorities, severities)
+
+			Expect(versions).To(Equal([]api.Version{
+				{GUID: "https://ubuntu.com/security/notices/USN-8528-1"},
+				{GUID: "https://ubuntu.com/security/notices/USN-8536-1"},
+			}))
+		})
+	})
+})
+
+var _ = Describe("GetLatestVersions against the live Canonical OVAL feed", Ordered, func() {
+	var (
+		definitions api.OvalDefinitions
+		versions    []api.Version
+	)
+
+	BeforeAll(func() {
+		// GetOvalRawData caches through package-level paths, so point them at a
+		// temp dir Ginkgo removes for us rather than sharing /tmp with the api suite.
+		cacheDir := GinkgoT().TempDir()
+		originalETagPath, originalCachedOvalXMLPath := api.ETagPath, api.CachedOvalXMLPath
+		api.ETagPath = filepath.Join(cacheDir, "etag")
+		api.CachedOvalXMLPath = filepath.Join(cacheDir, "oval.xml")
+		DeferCleanup(func() {
+			api.ETagPath, api.CachedOvalXMLPath = originalETagPath, originalCachedOvalXMLPath
+		})
+
+		rawData, err := api.GetOvalRawData("jammy")
+		Expect(err).ToNot(HaveOccurred())
+
+		definitions, err = api.ParseOvalData(rawData)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(len(definitions.Definitions)).To(BeNumerically(">", 100))
+
+		versions = GetLatestVersions(definitions, api.Version{}, []string{"high", "critical"}, []string{"high", "critical"})
+		Expect(versions).ToNot(BeEmpty())
+	})
+
+	It("emits only Ubuntu Security Notice urls", func() {
+		for _, version := range versions {
+			Expect(version.GUID).To(HavePrefix("https://ubuntu.com/security/notices/USN-"))
+		}
+	})
+
+	It("emits a USN issued within the last 30 days", func() {
+		issuedDates := map[string]string{}
+		for _, definition := range definitions.Definitions {
+			issuedDates[definition.Metadata.GetUSNUrl()] = definition.Metadata.Advisory.Issued.Date
+		}
+
+		newest := ""
+		for _, version := range versions {
+			// Trim any time component; the feed has used both "2006-01-02"
+			// and RFC 3339 for this attribute.
+			issued := issuedDates[version.GUID]
+			if len(issued) >= 10 && issued[:10] > newest {
+				newest = issued[:10]
+			}
+		}
+
+		newestIssued, err := time.Parse("2006-01-02", newest)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(newestIssued).To(BeTemporally(">", time.Now().AddDate(0, 0, -30)))
 	})
 })
