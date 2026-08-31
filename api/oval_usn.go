@@ -16,12 +16,13 @@ import (
 var ETagPath = path.Join("/", "tmp", "etag")
 var CachedOvalXMLPath = path.Join("/", "tmp", "oval.xml")
 
-var lineToName = map[string]string{
-	"ubuntu-14.04-lts": "trusty",
-	"ubuntu-16.04-lts": "xenial",
-	"ubuntu-18.04-lts": "bionic",
-	"ubuntu-22.04-lts": "jammy",
-	"ubuntu-24.04-lts": "noble",
+// OvalFeedBaseURL is the directory index of Canonical's OVAL data. Every file
+// under it is keyed by Ubuntu release codename, so `os` is used verbatim.
+const OvalFeedBaseURL = "https://security-metadata.canonical.com/oval/"
+
+// OvalFeedURL returns the USN OVAL feed URL for an Ubuntu release codename.
+func OvalFeedURL(codename string) string {
+	return fmt.Sprintf("%scom.ubuntu.%s.usn.oval.xml.bz2", OvalFeedBaseURL, codename)
 }
 
 type OvalCVE struct {
@@ -114,11 +115,6 @@ type USNMetadata struct {
 }
 
 func (d *Definition) ToUSNMetadata(osStr string) USNMetadata {
-	val, ok := lineToName[osStr]
-	if ok {
-		osStr = val
-	}
-
 	return USNMetadata{
 		URL:         d.Metadata.GetUSNUrl(),
 		Title:       d.Metadata.Title,
@@ -154,12 +150,7 @@ func ParseOvalData(xml []byte) (OvalDefinitions, error) {
 }
 
 func GetOvalRawData(osStr string) ([]byte, error) {
-	val, ok := lineToName[osStr]
-	if ok {
-		osStr = val
-	}
-
-	url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
+	url := OvalFeedURL(osStr)
 	resp, err := http.Head(url)
 	if err != nil {
 		return []byte{}, err
@@ -184,7 +175,7 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 		return []byte{}, err
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		return []byte{}, errors.New(fmt.Sprintf("Unknown os: %s", osStr)) //nolint:staticcheck
+		return []byte{}, fmt.Errorf("unknown os %q: `os` must be an Ubuntu release codename (e.g. jammy, noble, resolute), not a version number; see %s for the available releases", osStr, OvalFeedBaseURL)
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
