@@ -5,13 +5,17 @@ A read-only (no `put`) [Concourse](https://concourse.ci) resource for tracking
 
 
 ## Source Configuration
- * `os` - os distro to track
-   * `trusty` or `ubuntu-14.04-lts` for Ubuntu Trusty
-   * `xenial` or `ubuntu-16.04-lts` for Ubuntu Xenial
-   * `bionic` or `ubuntu-18.04-lts` for Ubuntu Bionic
-   * `jammy`  or `ubuntu-22.04-lts` for Ubuntu Jammy
-   * `noble`  or `ubuntu-24.04-lts` for Ubuntu Noble
-   * ... (see filters on the USN website for more)
+ * `os` - Ubuntu release **codename** to track, e.g. `jammy`, `noble`, `resolute`.
+
+   Used verbatim to address Canonical's OVAL data, which is keyed by codename:
+   `https://security-metadata.canonical.com/oval/com.ubuntu.<os>.usn.oval.xml.bz2`.
+   Browse [the feed index](https://security-metadata.canonical.com/oval/) for the
+   releases currently published; interim releases appear alongside LTS ones.
+
+   Version numbers such as `ubuntu-24.04-lts` are **not** accepted. Canonical has
+   never published OVAL data under that form; earlier versions of this resource
+   translated a hardcoded handful of them to codenames, which broke every time a
+   new Ubuntu release appeared.
  * `priorities` - list of Ubuntu CVE [priorities](https://ubuntu.com/security/cves/about#priority) to trigger on, including:
    * `low`
    * `medium`

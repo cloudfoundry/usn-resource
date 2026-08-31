@@ -3,7 +3,6 @@ package api_test
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -87,33 +86,28 @@ var _ = Describe("Oval USN", func() {
 				}
 			})
 		})
-		Context("given ubuntu version number", func() {
-			It("returns raw data", func() {
-				data, err := GetOvalRawData("ubuntu-22.04-lts")
-				Expect(err).To(BeNil())
-				Expect(len(data) > 0).To(BeTrue())
-				decoder := xml.NewDecoder(bytes.NewReader(data))
-
-				// Decode the XML into a dummy struct
-				// This will check for well-formedness
-				var dummy struct{}
-				if err := decoder.Decode(&dummy); err != nil {
-					Fail("invalid XML")
-				}
+		Context("given an ubuntu version number instead of a codename", func() {
+			It("errors, naming the codename requirement", func() {
+				_, err := GetOvalRawData("ubuntu-22.04-lts")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(`unknown os "ubuntu-22.04-lts"`))
+				Expect(err.Error()).To(ContainSubstring("must be an Ubuntu release codename"))
+				Expect(err.Error()).To(ContainSubstring(OvalFeedBaseURL))
 			})
 		})
 		Context("given neither os name or ubuntu version", func() {
 			It("errors", func() {
 				_, err := GetOvalRawData("randomOs")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Unknown os: randomOs"))
+				Expect(err.Error()).To(ContainSubstring(`unknown os "randomOs"`))
+				Expect(err.Error()).To(ContainSubstring("must be an Ubuntu release codename"))
 			})
 		})
 		Context("when there exists a etag", func() {
 			Context("when the existing etag matches the url's etag", func() {
 				It("returns the contents of the existing file", func() {
 					osStr := "jammy"
-					url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
+					url := OvalFeedURL(osStr)
 					resp, err := http.Head(url)
 					Expect(err).ToNot(HaveOccurred())
 					existingETag := resp.Header.Get("etag")
@@ -150,7 +144,7 @@ var _ = Describe("Oval USN", func() {
 			Context("when the cache file is empty", func() {
 				It("returns an error", func() {
 					osStr := "jammy"
-					url := fmt.Sprintf("https://security-metadata.canonical.com/oval/com.ubuntu.%s.usn.oval.xml.bz2", osStr)
+					url := OvalFeedURL(osStr)
 					resp, err := http.Head(url)
 					Expect(err).ToNot(HaveOccurred())
 					existingETag := resp.Header.Get("etag")
@@ -216,7 +210,7 @@ var _ = Describe("ToUSNMetadata", func() {
 		Expect(usnMetadata.CVEs).To(Equal([]string{"some-url"}))
 	})
 
-	It("converts ubuntu version to os name in releases", func() {
+	It("passes the codename through to releases unchanged", func() {
 		cve := OvalCVE{URL: "some-url", Priority: "low", CVSSSeverity: "medium"}
 		definition := Definition{Metadata: Metadata{
 			Advisory: Advisory{
@@ -228,8 +222,8 @@ var _ = Describe("ToUSNMetadata", func() {
 			References:  []Reference{{Source: "USN", RefUrl: "some-usn-url"}},
 		}}
 
-		usnMetadata := definition.ToUSNMetadata("ubuntu-22.04-lts")
-		Expect(usnMetadata.Releases).To(Equal([]string{"jammy"}))
+		usnMetadata := definition.ToUSNMetadata("resolute")
+		Expect(usnMetadata.Releases).To(Equal([]string{"resolute"}))
 	})
 })
 
