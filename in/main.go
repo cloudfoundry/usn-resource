@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -50,18 +49,7 @@ func main() {
 		return
 	}
 
-	rawData, err := api.GetOvalRawData(request.Source.OS)
-	if err != nil {
-		log.Fatalf("in: error retreiving oval data: '%s'", err)
-	}
-	ovalDefinitions, err := api.ParseOvalData(rawData)
-	if err != nil {
-		log.Fatalf("in: error parsing oval data: '%s'", err)
-	}
-
-	fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", ovalDefinitions.Timestamp)
-
-	def, err := ovalDefinitions.GetDefinition(request.Version.GUID)
+	def, err := api.GetDefinitionWithRetry(request.Source.OS, request.Version.GUID)
 	if err != nil {
 		log.Fatalf("in: error retreiving USN: '%s'", err)
 	}
