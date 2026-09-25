@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"slices"
+	"time"
 )
 
 var ETagPath = path.Join("/", "tmp", "etag")
@@ -18,7 +19,13 @@ var CachedOvalXMLPath = path.Join("/", "tmp", "oval.xml")
 
 // OvalFeedBaseURL is the directory index of Canonical's OVAL data. Every file
 // under it is keyed by Ubuntu release codename, so `os` is used verbatim.
-const OvalFeedBaseURL = "https://security-metadata.canonical.com/oval/"
+var OvalFeedBaseURL = "https://security-metadata.canonical.com/oval/"
+
+// Canonical serves the feed from several cache nodes that can lag each other
+// by a feed generation, so a USN that `check` found may be missing from the
+// copy `in` downloads. Refetching usually lands on a node that has it.
+var DefinitionFetchAttempts = 5
+var DefinitionFetchRetryDelay = 15 * time.Second
 
 // OvalFeedURL returns the USN OVAL feed URL for an Ubuntu release codename.
 func OvalFeedURL(codename string) string {
@@ -188,8 +195,38 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 		log.Fatal(err)
 	}
 
-	os.WriteFile(ETagPath, []byte(etag), 0644)          //nolint:errcheck
-	os.WriteFile(CachedOvalXMLPath, decompressed, 0644) //nolint:errcheck
+	os.WriteFile(ETagPath, []byte(resp.Header.Get("etag")), 0644) //nolint:errcheck
+	os.WriteFile(CachedOvalXMLPath, decompressed, 0644)           //nolint:errcheck
 
 	return decompressed, nil
+}
+
+// GetDefinitionWithRetry looks up the definition with the given id, bypassing
+// the etag cache and refetching the feed when the downloaded copy lacks it.
+func GetDefinitionWithRetry(osStr, id string) (Definition, error) {
+	var lookupErr error
+	for attempt := 1; attempt <= DefinitionFetchAttempts; attempt++ {
+		if attempt > 1 {
+			fmt.Fprintf(os.Stderr, "%s; refetching oval data (attempt %d/%d)\n", lookupErr, attempt, DefinitionFetchAttempts) //nolint:errcheck
+			time.Sleep(DefinitionFetchRetryDelay)
+			os.Remove(ETagPath) //nolint:errcheck
+		}
+
+		raw, err := GetOvalRawData(osStr)
+		if err != nil {
+			return Definition{}, fmt.Errorf("retrieving oval data: %w", err)
+		}
+		defs, err := ParseOvalData(raw)
+		if err != nil {
+			return Definition{}, fmt.Errorf("parsing oval data: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", defs.Timestamp) //nolint:errcheck
+
+		def, err := defs.GetDefinition(id)
+		if err == nil {
+			return def, nil
+		}
+		lookupErr = err
+	}
+	return Definition{}, fmt.Errorf("%w (after %d attempts)", lookupErr, DefinitionFetchAttempts)
 }
