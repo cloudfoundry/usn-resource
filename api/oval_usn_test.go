@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"os"
@@ -224,6 +225,20 @@ var _ = Describe("ToUSNMetadata", func() {
 
 		usnMetadata := definition.ToUSNMetadata("resolute")
 		Expect(usnMetadata.Releases).To(Equal([]string{"resolute"}))
+	})
+})
+
+var _ = Describe("ToUSNMetadata without CVEs", func() {
+	It("encodes empty lists rather than null", func() {
+		definition := Definition{Metadata: Metadata{
+			References: []Reference{{Source: "USN", RefUrl: "some-usn-url"}},
+		}}
+
+		encoded, err := json.Marshal(definition.ToUSNMetadata("jammy"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(encoded)).To(ContainSubstring(`"priorities":[]`))
+		Expect(string(encoded)).To(ContainSubstring(`"severities":[]`))
+		Expect(string(encoded)).To(ContainSubstring(`"cves":[]`))
 	})
 })
 

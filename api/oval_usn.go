@@ -23,7 +23,8 @@ var OvalFeedBaseURL = "https://security-metadata.canonical.com/oval/"
 
 // Canonical serves the feed from several cache nodes that can lag each other
 // by a feed generation, so a USN that `check` found may be missing from the
-// copy `in` downloads. Refetching usually lands on a node that has it.
+// copy `in` downloads, or present without its CVEs attached yet. Refetching
+// usually lands on a node that has it.
 var DefinitionFetchAttempts = 5
 var DefinitionFetchRetryDelay = 15 * time.Second
 
@@ -48,7 +49,7 @@ type Advisory struct {
 }
 
 func (a *Advisory) GetCVEUrls() []string {
-	var urls []string
+	urls := []string{}
 	for _, cve := range a.CVEs {
 		urls = append(urls, cve.URL)
 	}
@@ -75,8 +76,12 @@ func (a *Advisory) GetCVESeverities() []string {
 	})
 }
 
+// Always returns a non-nil slice so an empty result encodes as [] rather
+// than null, which consumers iterating over the JSON choke on.
 func extractUniqueFieldsWithIterFunc(iterFunc func(yield func(string) bool)) []string {
-	return slices.Compact(slices.Sorted(iterFunc))
+	fields := slices.AppendSeq([]string{}, iterFunc)
+	slices.Sort(fields)
+	return slices.Compact(fields)
 }
 
 type Reference struct {
@@ -202,7 +207,11 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 }
 
 // GetDefinitionWithRetry looks up the definition with the given id, bypassing
-// the etag cache and refetching the feed when the downloaded copy lacks it.
+// the etag cache and refetching the feed when the downloaded copy lacks it or
+// has it without any CVEs. `check` only emits USNs with a CVE matching the
+// configured priorities or severities, so a CVE-less copy is always a stale
+// one; accepting it would record the USN with no priorities, severities or
+// CVEs.
 func GetDefinitionWithRetry(osStr, id string) (Definition, error) {
 	var lookupErr error
 	for attempt := 1; attempt <= DefinitionFetchAttempts; attempt++ {
@@ -223,10 +232,15 @@ func GetDefinitionWithRetry(osStr, id string) (Definition, error) {
 		fmt.Fprintf(os.Stderr, "Oval data generated at %s\n", defs.Timestamp) //nolint:errcheck
 
 		def, err := defs.GetDefinition(id)
-		if err == nil {
-			return def, nil
+		if err != nil {
+			lookupErr = err
+			continue
 		}
-		lookupErr = err
+		if len(def.Metadata.Advisory.CVEs) == 0 {
+			lookupErr = fmt.Errorf("definition with id %s has no CVEs", id)
+			continue
+		}
+		return def, nil
 	}
 	return Definition{}, fmt.Errorf("%w (after %d attempts)", lookupErr, DefinitionFetchAttempts)
 }

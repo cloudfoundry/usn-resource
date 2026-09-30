@@ -94,6 +94,26 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			Expect(gets.Load()).To(BeEquivalentTo(1))
 		})
 
+		It("refetches past a stale copy that has the definition without its CVEs", func() {
+			headETag = "stale"
+			getResponses = []string{"stale", "fresh"}
+
+			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-3-1")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(def.Metadata.Advisory.CVEs).To(HaveLen(1))
+			Expect(gets.Load()).To(BeEquivalentTo(2))
+		})
+
+		It("gives up when every copy has the definition without its CVEs", func() {
+			headETag = "stale"
+			getResponses = []string{"stale"}
+
+			_, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-3-1")
+			Expect(err).To(MatchError(ContainSubstring("definition with id https://ubuntu.com/security/notices/USN-3-1 has no CVEs")))
+			Expect(err).To(MatchError(ContainSubstring("attempts")))
+			Expect(gets.Load()).To(BeEquivalentTo(DefinitionFetchAttempts))
+		})
+
 		It("gives up after DefinitionFetchAttempts downloads", func() {
 			headETag = "stale"
 			getResponses = []string{"stale"}
