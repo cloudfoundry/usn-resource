@@ -28,6 +28,11 @@ A read-only (no `put`) [Concourse](https://concourse.ci) resource for tracking
     * `high`
     * `critical`
 
+* `fetch_attempts` - optional, default `10`. How many times `in` downloads the OVAL
+  feed looking for the USN that `check` found. Canonical's cache nodes can lag each
+  other, so a fresh download may be missing a new USN or its CVEs. Retries back off
+  exponentially from 30s, capped at 10m, so the default gives up after about an hour.
+
 The resource will trigger if _either_ the configured priorities _or_ severities match a usn.
 For example, https://ubuntu.com/security/CVE-2025-9230 has a CVSS severity of `high` but a
 Ubuntu priority of `medium`.

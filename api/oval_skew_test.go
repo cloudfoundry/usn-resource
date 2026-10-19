@@ -79,7 +79,7 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			headETag = "stale"
 			getResponses = []string{"stale", "fresh"}
 
-			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-2-1")
+			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-2-1", DefinitionFetchAttempts)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(def.Metadata.Title).To(Equal("USN-2-1"))
 			Expect(gets.Load()).To(BeEquivalentTo(2))
@@ -89,7 +89,7 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			headETag = "stale"
 			getResponses = []string{"stale"}
 
-			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-1-1")
+			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-1-1", DefinitionFetchAttempts)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(def.Metadata.Title).To(Equal("USN-1-1"))
 			Expect(gets.Load()).To(BeEquivalentTo(1))
@@ -99,7 +99,7 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			headETag = "stale"
 			getResponses = []string{"stale", "fresh"}
 
-			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-3-1")
+			def, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-3-1", DefinitionFetchAttempts)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(def.Metadata.Advisory.CVEs).To(HaveLen(1))
 			Expect(gets.Load()).To(BeEquivalentTo(2))
@@ -109,7 +109,7 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			headETag = "stale"
 			getResponses = []string{"stale"}
 
-			_, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-3-1")
+			_, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-3-1", DefinitionFetchAttempts)
 			Expect(err).To(MatchError(ContainSubstring("definition with id https://ubuntu.com/security/notices/USN-3-1 has no CVEs")))
 			Expect(err).To(MatchError(ContainSubstring("attempts")))
 			Expect(gets.Load()).To(BeEquivalentTo(DefinitionFetchAttempts))
@@ -119,11 +119,30 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			headETag = "stale"
 			getResponses = []string{"stale"}
 
-			_, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-2-1")
+			_, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-2-1", DefinitionFetchAttempts)
 			Expect(err).To(MatchError(ContainSubstring("Unknown definition with id https://ubuntu.com/security/notices/USN-2-1")))
 			Expect(err).To(MatchError(ContainSubstring("attempts")))
 			Expect(gets.Load()).To(BeEquivalentTo(DefinitionFetchAttempts))
 		})
+
+		It("gives up after the given number of downloads", func() {
+			headETag = "stale"
+			getResponses = []string{"stale"}
+
+			_, err := GetDefinitionWithRetry("jammy", "https://ubuntu.com/security/notices/USN-2-1", 3)
+			Expect(err).To(MatchError(ContainSubstring("after 3 attempts")))
+			Expect(gets.Load()).To(BeEquivalentTo(3))
+		})
+	})
+})
+
+var _ = Describe("Source.DefinitionFetchAttempts", func() {
+	It("defaults to DefinitionFetchAttempts when fetch_attempts is unset", func() {
+		Expect(Source{}.DefinitionFetchAttempts()).To(Equal(DefinitionFetchAttempts))
+	})
+
+	It("uses fetch_attempts when set", func() {
+		Expect(Source{FetchAttempts: 3}.DefinitionFetchAttempts()).To(Equal(3))
 	})
 })
 

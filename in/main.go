@@ -49,7 +49,12 @@ func main() {
 		return
 	}
 
-	def, err := api.GetDefinitionWithRetry(request.Source.OS, request.Version.GUID)
+	attempts := request.Source.DefinitionFetchAttempts()
+	if attempts < 1 {
+		log.Fatalf("in: `fetch_attempts` must be at least 1, got %d", attempts)
+	}
+
+	def, err := api.GetDefinitionWithRetry(request.Source.OS, request.Version.GUID, attempts)
 	if err != nil {
 		log.Fatalf("in: error retreiving USN: '%s'", err)
 	}
