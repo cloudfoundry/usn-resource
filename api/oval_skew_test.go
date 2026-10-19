@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync/atomic"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -123,5 +124,23 @@ var _ = Describe("OVAL feed served by out-of-sync cache nodes", func() {
 			Expect(err).To(MatchError(ContainSubstring("attempts")))
 			Expect(gets.Load()).To(BeEquivalentTo(DefinitionFetchAttempts))
 		})
+	})
+})
+
+var _ = Describe("DefinitionFetchBackoff", func() {
+	It("doubles the delay per retry up to the cap", func() {
+		Expect(DefinitionFetchBackoff(1)).To(Equal(30 * time.Second))
+		Expect(DefinitionFetchBackoff(2)).To(Equal(1 * time.Minute))
+		Expect(DefinitionFetchBackoff(5)).To(Equal(8 * time.Minute))
+		Expect(DefinitionFetchBackoff(6)).To(Equal(10 * time.Minute))
+		Expect(DefinitionFetchBackoff(100)).To(Equal(10 * time.Minute))
+	})
+
+	It("keeps retrying for about an hour in total", func() {
+		var total time.Duration
+		for retry := 1; retry < DefinitionFetchAttempts; retry++ {
+			total += DefinitionFetchBackoff(retry)
+		}
+		Expect(total).To(BeNumerically("~", time.Hour, 10*time.Minute))
 	})
 })
