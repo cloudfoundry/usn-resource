@@ -24,9 +24,23 @@ var OvalFeedBaseURL = "https://security-metadata.canonical.com/oval/"
 // Canonical serves the feed from several cache nodes that can lag each other
 // by a feed generation, so a USN that `check` found may be missing from the
 // copy `in` downloads, or present without its CVEs attached yet. Refetching
-// usually lands on a node that has it.
-var DefinitionFetchAttempts = 5
-var DefinitionFetchRetryDelay = 15 * time.Second
+// usually lands on a node that has it. A lagging node can stay behind for a
+// while, so refetches back off exponentially (30s, 1m, 2m, ... capped at 10m),
+// giving up after about an hour.
+var DefinitionFetchAttempts = 10
+var DefinitionFetchRetryDelay = 30 * time.Second
+var DefinitionFetchMaxRetryDelay = 10 * time.Minute
+
+// DefinitionFetchBackoff returns how long to wait before the given retry
+// (1 for the first refetch): DefinitionFetchRetryDelay doubled per retry,
+// capped at DefinitionFetchMaxRetryDelay.
+func DefinitionFetchBackoff(retry int) time.Duration {
+	delay := DefinitionFetchRetryDelay
+	for i := 1; i < retry && delay < DefinitionFetchMaxRetryDelay; i++ {
+		delay *= 2
+	}
+	return min(delay, DefinitionFetchMaxRetryDelay)
+}
 
 // OvalFeedURL returns the USN OVAL feed URL for an Ubuntu release codename.
 func OvalFeedURL(codename string) string {
@@ -216,8 +230,9 @@ func GetDefinitionWithRetry(osStr, id string) (Definition, error) {
 	var lookupErr error
 	for attempt := 1; attempt <= DefinitionFetchAttempts; attempt++ {
 		if attempt > 1 {
-			fmt.Fprintf(os.Stderr, "%s; refetching oval data (attempt %d/%d)\n", lookupErr, attempt, DefinitionFetchAttempts) //nolint:errcheck
-			time.Sleep(DefinitionFetchRetryDelay)
+			delay := DefinitionFetchBackoff(attempt - 1)
+			fmt.Fprintf(os.Stderr, "%s; refetching oval data in %s (attempt %d/%d)\n", lookupErr, delay, attempt, DefinitionFetchAttempts) //nolint:errcheck
+			time.Sleep(delay)
 			os.Remove(ETagPath) //nolint:errcheck
 		}
 
