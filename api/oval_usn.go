@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -26,20 +27,19 @@ var OvalFeedBaseURL = "https://security-metadata.canonical.com/oval/"
 // copy `in` downloads, or present without its CVEs attached yet. Refetching
 // usually lands on a node that has it. A lagging node can stay behind for a
 // while, so refetches back off exponentially (30s, 1m, 2m, ... capped at 10m),
-// giving up after about an hour.
+// giving up after about an hour by default (`fetch_attempts` in the source
+// overrides the attempt count).
 var DefinitionFetchAttempts = 10
 var DefinitionFetchRetryDelay = 30 * time.Second
 var DefinitionFetchMaxRetryDelay = 10 * time.Minute
 
 // DefinitionFetchBackoff returns how long to wait before the given retry
-// (1 for the first refetch): DefinitionFetchRetryDelay doubled per retry,
-// capped at DefinitionFetchMaxRetryDelay.
+// (1 for the first refetch): DefinitionFetchRetryDelay * 2^(retry-1), capped
+// at DefinitionFetchMaxRetryDelay. Computed in float64 so large retries can't
+// overflow before the cap applies.
 func DefinitionFetchBackoff(retry int) time.Duration {
-	delay := DefinitionFetchRetryDelay
-	for i := 1; i < retry && delay < DefinitionFetchMaxRetryDelay; i++ {
-		delay *= 2
-	}
-	return min(delay, DefinitionFetchMaxRetryDelay)
+	delay := float64(DefinitionFetchRetryDelay) * math.Pow(2, float64(retry-1))
+	return time.Duration(min(delay, float64(DefinitionFetchMaxRetryDelay)))
 }
 
 // OvalFeedURL returns the USN OVAL feed URL for an Ubuntu release codename.
@@ -226,12 +226,12 @@ func GetOvalRawData(osStr string) ([]byte, error) {
 // configured priorities or severities, so a CVE-less copy is always a stale
 // one; accepting it would record the USN with no priorities, severities or
 // CVEs.
-func GetDefinitionWithRetry(osStr, id string) (Definition, error) {
+func GetDefinitionWithRetry(osStr, id string, attempts int) (Definition, error) {
 	var lookupErr error
-	for attempt := 1; attempt <= DefinitionFetchAttempts; attempt++ {
+	for attempt := 1; attempt <= attempts; attempt++ {
 		if attempt > 1 {
 			delay := DefinitionFetchBackoff(attempt - 1)
-			fmt.Fprintf(os.Stderr, "%s; refetching oval data in %s (attempt %d/%d)\n", lookupErr, delay, attempt, DefinitionFetchAttempts) //nolint:errcheck
+			fmt.Fprintf(os.Stderr, "%s; refetching oval data in %s (attempt %d/%d)\n", lookupErr, delay, attempt, attempts) //nolint:errcheck
 			time.Sleep(delay)
 			os.Remove(ETagPath) //nolint:errcheck
 		}
@@ -257,5 +257,5 @@ func GetDefinitionWithRetry(osStr, id string) (Definition, error) {
 		}
 		return def, nil
 	}
-	return Definition{}, fmt.Errorf("%w (after %d attempts)", lookupErr, DefinitionFetchAttempts)
+	return Definition{}, fmt.Errorf("%w (after %d attempts)", lookupErr, attempts)
 }
